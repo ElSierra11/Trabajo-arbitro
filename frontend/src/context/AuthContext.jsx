@@ -65,13 +65,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async ({ name, email, password, refNumber }) => {
+  const register = async (nameOrObj, email, password, refNumber) => {
     setAuthError(null);
+    let namePayload = nameOrObj;
+    let emailPayload = email;
+    let passPayload = password;
+    let refPayload = refNumber;
+    if (typeof nameOrObj === 'object' && nameOrObj !== null) {
+      namePayload = nameOrObj.name;
+      emailPayload = nameOrObj.email;
+      passPayload = nameOrObj.password;
+      refPayload = nameOrObj.refNumber;
+    }
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, refNumber })
+        body: JSON.stringify({ name: namePayload, email: emailPayload, password: passPayload, refNumber: refPayload })
       });
       const data = await res.json();
       if (!res.ok) {
