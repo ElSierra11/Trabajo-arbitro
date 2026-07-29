@@ -147,15 +147,14 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
 
     setFormData((prev) => {
       const updatedGoals = [...prev.goals, newGoal].sort((a, b) => a.minute - b.minute);
-      // Auto-update goals counters
       const homeCount = updatedGoals.filter(g => g.team === 'local').length;
       const awayCount = updatedGoals.filter(g => g.team === 'visitante').length;
       
       return {
         ...prev,
         goals: updatedGoals,
-        homeGoals: homeCount,
-        awayGoals: awayCount
+        homeGoals: Math.max(prev.homeGoals, homeCount),
+        awayGoals: Math.max(prev.awayGoals, awayCount)
       };
     });
 
@@ -172,8 +171,8 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
       return {
         ...prev,
         goals: updatedGoals,
-        homeGoals: homeCount,
-        awayGoals: awayCount
+        homeGoals: Math.min(prev.homeGoals, homeCount),
+        awayGoals: Math.min(prev.awayGoals, awayCount)
       };
     });
   };
@@ -364,28 +363,28 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
             {/* Marcador Final Goals (Autocalculated but editable) */}
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Marcador Local (Autocalculado)</label>
+                <label className="form-label">Marcador Local</label>
                 <input 
                   type="number" 
                   name="homeGoals"
                   min="0"
                   value={formData.homeGoals}
                   onChange={handleNumericChange}
-                  className="form-control bg-slate-900/40 text-primary font-bold"
-                  title="Se calcula agregando los goles de los jugadores abajo"
+                  className="form-control font-bold"
+                  placeholder="0"
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Marcador Visitante (Autocalculado)</label>
+                <label className="form-label">Marcador Visitante</label>
                 <input 
                   type="number" 
                   name="awayGoals"
                   min="0"
                   value={formData.awayGoals}
                   onChange={handleNumericChange}
-                  className="form-control bg-slate-900/40 text-primary font-bold"
-                  title="Se calcula agregando los goles de los jugadores abajo"
+                  className="form-control font-bold"
+                  placeholder="0"
                 />
               </div>
             </div>
