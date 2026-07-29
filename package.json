@@ -1,0 +1,24 @@
+{
+  "name": "coarc-refmanager",
+  "version": "1.0.0",
+  "description": "Plataforma de gestión de partidos y finanzas para árbitros COARC",
+  "scripts": {
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "frontend:install": "npm --prefix frontend install",
+    "backend:install": "npm --prefix backend install",
+    "install-all": "npm run frontend:install && npm run backend:install"
+  },
+  "keywords": [
+    "coarc",
+    "referee",
+    "react",
+    "node",
+    "postgres",
+    "docker"
+  ],
+  "author": "Antigravity",
+  "license": "ISC"
+}

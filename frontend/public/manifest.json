@@ -1,0 +1,24 @@
+{
+  "short_name": "COARC",
+  "name": "COARC · Corporación Arbitral de Córdoba",
+  "icons": [
+    {
+      "src": "pwa-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "pwa-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b0c10",
+  "theme_color": "#10b981",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "Aplicación oficial de gestión arbitral de la Corporación Arbitral de Córdoba (COARC)."
+}
