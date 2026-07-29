@@ -215,10 +215,12 @@ const AppContent = () => {
       {/* Main Content */}
       <main className="main-content">
         <div className="tab-content">
-          <div className="flex-between" style={{ marginBottom: '2rem' }}>
-            <div>
-              <h1 style={{ marginBottom: '0.25rem' }}>{getTabTitle()}</h1>
-              <p className="text-muted">Corporación Arbitral de Córdoba • {user?.name || activeProfile.name}</p>
+          <div className="flex-between" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <h1 style={{ marginBottom: '0.2rem' }}>{getTabTitle()}</h1>
+              <p className="text-muted" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                COARC • {user?.name || activeProfile.name}
+              </p>
             </div>
             {currentTab !== 'profiles' && currentTab !== 'admin' && (
               <div style={{ display: 'flex', gap: '0.75rem' }}>
