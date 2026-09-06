@@ -252,7 +252,7 @@ export const RefProvider = ({ children }) => {
 
   // Selectors for active profile
   const activeProfile = profiles.find(p => p.id === activeProfileId) || DEFAULT_PROFILE;
-  const activeMatches = matches.filter(m => m.profileId === activeProfileId);
+  const activeMatches = matches.filter(m => !m.profileId || m.profileId === activeProfileId || profiles.length <= 1);
 
   // Statistics calculations helper
   const getStats = () => {

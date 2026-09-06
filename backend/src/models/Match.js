@@ -92,7 +92,7 @@ const Match = sequelize.define('Match', {
   },
 }, {
   timestamps: true,
-  tableName: 'matches',
+  tableName: 'Matches',
   indexes: [
     // Composite index for fast financial and dashboard aggregations
     {

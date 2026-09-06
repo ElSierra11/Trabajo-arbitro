@@ -390,7 +390,15 @@ const resolveTournamentId = async (userId, tournamentName) => {
 // Get matches for current user
 app.get('/api/matches', verifyToken, async (req, res) => {
   try {
-    const where = req.user.role === 'admin' ? {} : { userId: req.user.id };
+    const { Op } = await import('sequelize');
+    const where = req.user.role === 'admin' 
+      ? {} 
+      : { 
+          [Op.or]: [
+            { userId: req.user.id },
+            { userId: null },
+          ]
+        };
     const list = await Match.findAll({
       where,
       order: [['date', 'DESC'], ['time', 'DESC']]
@@ -544,8 +552,8 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
         COALESCE(SUM("yellowCards"), 0)::int AS "totalYellowCards",
         COALESCE(SUM("redCards"), 0)::int AS "totalRedCards",
         COALESCE(SUM("homeGoals" + "awayGoals"), 0)::int AS "totalGoals"
-      FROM matches
-      WHERE "userId" = :userId
+      FROM "Matches"
+      WHERE ("userId" = :userId OR "userId" IS NULL)
     `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
 
     // 2. Monthly breakdown
@@ -556,8 +564,8 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
         COALESCE(SUM(fee), 0)::int AS total,
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS paid,
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS pending
-      FROM matches
-      WHERE "userId" = :userId AND "date" IS NOT NULL
+      FROM "Matches"
+      WHERE ("userId" = :userId OR "userId" IS NULL) AND "date" IS NOT NULL
       GROUP BY SUBSTRING("date", 1, 7)
       ORDER BY "monthKey" DESC
     `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
@@ -570,8 +578,8 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
         COALESCE(SUM(fee), 0)::int AS total,
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS paid,
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS pending
-      FROM matches
-      WHERE "userId" = :userId
+      FROM "Matches"
+      WHERE ("userId" = :userId OR "userId" IS NULL)
       GROUP BY COALESCE(NULLIF(tournament, ''), 'Sin Torneo')
       ORDER BY pending DESC, total DESC
     `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
@@ -711,6 +719,23 @@ const startServer = async () => {
     // alter:true keeps existing data while adding new columns and indexes safely
     await sequelize.sync({ alter: true });
     console.log('✅ Tablas e índices de la base de datos sincronizados.');
+
+    // Migration safety: copy any rows from lowercase 'matches' back into '"Matches"' if lowercase exists
+    try {
+      const [lowerCheck] = await sequelize.query(`
+        SELECT to_regclass('public.matches') AS exists;
+      `);
+      if (lowerCheck && lowerCheck[0] && lowerCheck[0].exists) {
+        await sequelize.query(`
+          INSERT INTO "Matches" (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
+          SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
+          FROM matches
+          ON CONFLICT (id) DO NOTHING;
+        `);
+      }
+    } catch (migErr) {
+      console.log('Verificación de compatibilidad de tablas:', migErr.message);
+    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Servidor COARC ejecutándose en el puerto ${PORT}`);
