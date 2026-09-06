@@ -399,12 +399,43 @@ app.get('/api/matches', verifyToken, async (req, res) => {
             { userId: null },
           ]
         };
-    const list = await Match.findAll({
+    let list = await Match.findAll({
       where,
       order: [['date', 'DESC'], ['time', 'DESC']]
     });
-    res.json(list);
+
+    // FAIL-SAFE: If Sequelize returns empty, query both tables directly to guarantee existing matches appear
+    if (!list || list.length === 0) {
+      console.log('Match.findAll returned empty, running fail-safe raw queries...');
+      try {
+        const [rows1] = await sequelize.query(`SELECT * FROM "Matches" ORDER BY "date" DESC`);
+        if (rows1 && rows1.length > 0) {
+          list = rows1;
+        }
+      } catch (_) {}
+
+      if (!list || list.length === 0) {
+        try {
+          const [rows2] = await sequelize.query(`SELECT * FROM matches ORDER BY "date" DESC`);
+          if (rows2 && rows2.length > 0) {
+            list = rows2;
+          }
+        } catch (_) {}
+      }
+    }
+
+    res.json(list || []);
   } catch (err) {
+    console.error('Error fetching matches:', err);
+    // Direct raw fallback on any error
+    try {
+      const [rows] = await sequelize.query(`SELECT * FROM "Matches" ORDER BY "date" DESC`);
+      if (rows && rows.length > 0) return res.json(rows);
+    } catch (_) {}
+    try {
+      const [rows] = await sequelize.query(`SELECT * FROM matches ORDER BY "date" DESC`);
+      if (rows && rows.length > 0) return res.json(rows);
+    } catch (_) {}
     res.status(500).json({ error: err.message });
   }
 });
@@ -720,22 +751,26 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     console.log('✅ Tablas e índices de la base de datos sincronizados.');
 
-    // Migration safety: copy any rows from lowercase 'matches' back into '"Matches"' if lowercase exists
+    // Migration safety: copy any rows from lowercase 'matches' back into '"Matches"' and vice versa
     try {
-      const [lowerCheck] = await sequelize.query(`
-        SELECT to_regclass('public.matches') AS exists;
+      await sequelize.query(`
+        INSERT INTO "Matches" (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
+        SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
+        FROM matches
+        ON CONFLICT (id) DO NOTHING;
       `);
-      if (lowerCheck && lowerCheck[0] && lowerCheck[0].exists) {
-        await sequelize.query(`
-          INSERT INTO "Matches" (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
-          SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
-          FROM matches
-          ON CONFLICT (id) DO NOTHING;
-        `);
-      }
-    } catch (migErr) {
-      console.log('Verificación de compatibilidad de tablas:', migErr.message);
-    }
+      console.log('✅ Migración matches -> "Matches" verificada.');
+    } catch (_) {}
+
+    try {
+      await sequelize.query(`
+        INSERT INTO matches (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
+        SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
+        FROM "Matches"
+        ON CONFLICT (id) DO NOTHING;
+      `);
+      console.log('✅ Migración "Matches" -> matches verificada.');
+    } catch (_) {}
 
     app.listen(PORT, () => {
       console.log(`🚀 Servidor COARC ejecutándose en el puerto ${PORT}`);

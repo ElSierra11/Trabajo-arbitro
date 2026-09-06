@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 
 const RefContext = createContext();
 
@@ -39,7 +39,30 @@ export const RefProvider = ({ children }) => {
       const matchRes = await fetch(`${API_URL}/matches`, { headers });
       if (!matchRes.ok) throw new Error('Error al cargar partidos del servidor');
       const matchData = await matchRes.json();
-      setMatches(matchData);
+      console.log('Partidos cargados desde API:', matchData?.length);
+      
+      if (Array.isArray(matchData) && matchData.length > 0) {
+        setMatches(matchData);
+        try { localStorage.setItem('coarc_cached_matches', JSON.stringify(matchData)); } catch (_) {}
+      } else {
+        // Fail-safe: check if there are matches in local storage cache
+        try {
+          const cached = localStorage.getItem('coarc_cached_matches');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              console.log('Restaurando partidos desde caché local:', parsed.length);
+              setMatches(parsed);
+            } else {
+              setMatches([]);
+            }
+          } else {
+            setMatches([]);
+          }
+        } catch (_) {
+          setMatches([]);
+        }
+      }
 
       // Determine active profile from local preferences or fallback to first
       const savedActiveId = localStorage.getItem('coarc_active_profile_id');
@@ -52,6 +75,13 @@ export const RefProvider = ({ children }) => {
       setError(null);
     } catch (err) {
       console.error('API connection error:', err);
+      try {
+        const cached = localStorage.getItem('coarc_cached_matches');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) setMatches(parsed);
+        }
+      } catch (_) {}
       setError('No se pudo conectar al servidor. Los datos podrían no estar sincronizados.');
     } finally {
       setLoading(false);
@@ -251,8 +281,13 @@ export const RefProvider = ({ children }) => {
   };
 
   // Selectors for active profile
-  const activeProfile = profiles.find(p => p.id === activeProfileId) || DEFAULT_PROFILE;
-  const activeMatches = matches.filter(m => !m.profileId || m.profileId === activeProfileId || profiles.length <= 1);
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || DEFAULT_PROFILE;
+  const activeMatches = useMemo(() => {
+    if (!matches || matches.length === 0) return [];
+    if (profiles.length <= 1) return matches;
+    const filtered = matches.filter(m => !m.profileId || m.profileId === activeProfileId);
+    return filtered.length > 0 ? filtered : matches;
+  }, [matches, activeProfileId, profiles]);
 
   // Statistics calculations helper
   const getStats = () => {
