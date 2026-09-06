@@ -10,9 +10,24 @@ import sequelize, { connectDB } from './config/db.js';
 import User from './models/User.js';
 import Profile from './models/Profile.js';
 import Match from './models/Match.js';
+import Tournament from './models/Tournament.js';
+import Team from './models/Team.js';
+import InvoiceSequence from './models/InvoiceSequence.js';
 import { verifyToken, requireAdmin, JWT_SECRET } from './middleware/auth.js';
 
 dotenv.config();
+
+// ==========================================
+// MODEL ASSOCIATIONS
+// ==========================================
+User.hasMany(Tournament, { foreignKey: 'userId' });
+Tournament.belongsTo(User, { foreignKey: 'userId' });
+
+Tournament.hasMany(Team, { foreignKey: 'tournamentId' });
+Team.belongsTo(Tournament, { foreignKey: 'tournamentId' });
+
+Tournament.hasMany(Match, { foreignKey: 'tournamentId' });
+Match.belongsTo(Tournament, { foreignKey: 'tournamentId' });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,16 +35,22 @@ const PORT = process.env.PORT || 5000;
 // Enable trust proxy for Render / Railway reverse proxies
 app.set('trust proxy', 1);
 
+// Helper for string sanitization
+const sanitizeName = (str) => {
+  if (!str || typeof str !== 'string') return '';
+  return str.trim().replace(/\s+/g, ' ');
+};
+
 // ==========================================
 // SECURITY & PERFORMANCE MIDDLEWARE
 // ==========================================
 app.use(helmet());
 app.use(compression());
 
-// General Rate Limiter (15 min window, 100 requests)
+// General Rate Limiter (15 min window, 150 requests)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: 200,
   message: { error: 'Demasiadas solicitudes desde esta IP, por favor intenta más tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -38,7 +59,7 @@ const apiLimiter = rateLimit({
 // Strict Rate Limiter for Login/Register (15 min window, 10 attempts)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 15,
   message: { error: 'Demasiados intentos de acceso. Intenta de nuevo en 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -91,10 +112,10 @@ app.post('/api/auth/register', async (req, res) => {
     const role = userCount === 0 ? 'admin' : 'user';
 
     const user = await User.create({
-      name,
-      email,
+      name: sanitizeName(name),
+      email: email.trim().toLowerCase(),
       password: hashedPassword,
-      refNumber: refNumber || '',
+      refNumber: refNumber ? sanitizeName(refNumber) : '',
       role,
     });
 
@@ -131,7 +152,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Correo y contraseña son requeridos.' });
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: email.trim().toLowerCase() } });
     if (!user) {
       return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
     }
@@ -219,7 +240,52 @@ app.post('/api/users/:id/reset-password', verifyToken, requireAdmin, async (req,
 });
 
 // ==========================================
-// 2. PROFILES API (Protected)
+// 2. TOURNAMENTS & TEAMS (Normalized Entities)
+// ==========================================
+
+// Get all tournaments for current user
+app.get('/api/tournaments', verifyToken, async (req, res) => {
+  try {
+    const list = await Tournament.findAll({
+      where: { userId: req.user.id },
+      order: [['name', 'ASC']],
+    });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create or get tournament (sanitized)
+app.post('/api/tournaments', verifyToken, async (req, res) => {
+  try {
+    const name = sanitizeName(req.body.name);
+    if (!name) return res.status(400).json({ error: 'El nombre del torneo es requerido' });
+
+    const [t] = await Tournament.findOrCreate({
+      where: { userId: req.user.id, name },
+      defaults: { userId: req.user.id, name },
+    });
+    res.status(201).json(t);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get teams (optionally filtered by tournamentId)
+app.get('/api/teams', verifyToken, async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.tournamentId) where.tournamentId = req.query.tournamentId;
+    const list = await Team.findAll({ where, order: [['name', 'ASC']] });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 3. PROFILES API (Protected)
 // ==========================================
 
 // Get profiles for current user (admin gets all)
@@ -253,8 +319,8 @@ app.post('/api/profiles', verifyToken, async (req, res) => {
     const newProfile = await Profile.create({
       id: id || `profile-${Date.now()}`,
       userId: req.user.id,
-      name,
-      refNumber: refNumber || '',
+      name: sanitizeName(name),
+      refNumber: refNumber ? sanitizeName(refNumber) : '',
       defaultFee: Number(defaultFee) || 0
     });
     res.status(201).json(newProfile);
@@ -275,8 +341,8 @@ app.put('/api/profiles/:id', verifyToken, async (req, res) => {
 
     const { name, refNumber, defaultFee } = req.body;
     await profile.update({
-      name: name ?? profile.name,
-      refNumber: refNumber ?? profile.refNumber,
+      name: name ? sanitizeName(name) : profile.name,
+      refNumber: refNumber !== undefined ? sanitizeName(refNumber) : profile.refNumber,
       defaultFee: defaultFee !== undefined ? Number(defaultFee) : profile.defaultFee
     });
     res.json(profile);
@@ -303,8 +369,23 @@ app.delete('/api/profiles/:id', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 3. MATCHES API (Protected)
+// 4. MATCHES API (Protected)
 // ==========================================
+
+// Helper to normalize and associate tournament
+const resolveTournamentId = async (userId, tournamentName) => {
+  const cleanName = sanitizeName(tournamentName);
+  if (!cleanName) return null;
+  try {
+    const [t] = await Tournament.findOrCreate({
+      where: { userId, name: cleanName },
+      defaults: { userId, name: cleanName },
+    });
+    return t.id;
+  } catch (e) {
+    return null;
+  }
+};
 
 // Get matches for current user
 app.get('/api/matches', verifyToken, async (req, res) => {
@@ -324,16 +405,21 @@ app.get('/api/matches', verifyToken, async (req, res) => {
 app.post('/api/matches', verifyToken, async (req, res) => {
   try {
     const d = req.body;
+    const tournamentName = sanitizeName(d.tournament);
+    const tournamentId = d.tournamentId || (await resolveTournamentId(req.user.id, tournamentName));
+    const isPaid = d.paymentStatus === 'Pagado';
+
     const newMatch = await Match.create({
       id: d.id || `match-${Date.now()}`,
       userId: req.user.id,
       profileId: d.profileId,
+      tournamentId,
       date: d.date,
       time: d.time || '',
-      tournament: d.tournament || '',
+      tournament: tournamentName,
       category: d.category || '',
-      homeTeam: d.homeTeam,
-      awayTeam: d.awayTeam,
+      homeTeam: sanitizeName(d.homeTeam),
+      awayTeam: sanitizeName(d.awayTeam),
       homeGoals: Number(d.homeGoals) || 0,
       awayGoals: Number(d.awayGoals) || 0,
       yellowCards: Number(d.yellowCards) || 0,
@@ -341,6 +427,8 @@ app.post('/api/matches', verifyToken, async (req, res) => {
       role: d.role || 'Árbitro Central',
       fee: Number(d.fee) || 0,
       paymentStatus: d.paymentStatus || 'Pendiente',
+      paidAt: isPaid ? (d.paidAt || new Date()) : null,
+      paymentMethod: isPaid ? (d.paymentMethod || 'Transferencia') : null,
       notes: d.notes || '',
       goals: d.goals || [],
       cards: d.cards || []
@@ -361,13 +449,25 @@ app.put('/api/matches/:id', verifyToken, async (req, res) => {
     }
 
     const d = req.body;
+    const tournamentName = d.tournament !== undefined ? sanitizeName(d.tournament) : match.tournament;
+    const tournamentId = d.tournamentId !== undefined
+      ? d.tournamentId
+      : (d.tournament ? await resolveTournamentId(req.user.id, tournamentName) : match.tournamentId);
+
+    const isPaid = (d.paymentStatus ?? match.paymentStatus) === 'Pagado';
+    const wasPaid = match.paymentStatus === 'Pagado';
+    let paidAt = match.paidAt;
+    if (isPaid && !wasPaid) paidAt = new Date();
+    else if (!isPaid) paidAt = null;
+
     await match.update({
       date: d.date ?? match.date,
       time: d.time ?? match.time,
-      tournament: d.tournament ?? match.tournament,
+      tournamentId,
+      tournament: tournamentName,
       category: d.category ?? match.category,
-      homeTeam: d.homeTeam ?? match.homeTeam,
-      awayTeam: d.awayTeam ?? match.awayTeam,
+      homeTeam: d.homeTeam ? sanitizeName(d.homeTeam) : match.homeTeam,
+      awayTeam: d.awayTeam ? sanitizeName(d.awayTeam) : match.awayTeam,
       homeGoals: d.homeGoals !== undefined ? Number(d.homeGoals) : match.homeGoals,
       awayGoals: d.awayGoals !== undefined ? Number(d.awayGoals) : match.awayGoals,
       yellowCards: d.yellowCards !== undefined ? Number(d.yellowCards) : match.yellowCards,
@@ -375,10 +475,37 @@ app.put('/api/matches/:id', verifyToken, async (req, res) => {
       role: d.role ?? match.role,
       fee: d.fee !== undefined ? Number(d.fee) : match.fee,
       paymentStatus: d.paymentStatus ?? match.paymentStatus,
+      paidAt: d.paidAt !== undefined ? d.paidAt : paidAt,
+      paymentMethod: d.paymentMethod !== undefined ? d.paymentMethod : match.paymentMethod,
       notes: d.notes ?? match.notes,
       goals: d.goals ?? match.goals,
       cards: d.cards ?? match.cards,
     });
+    res.json(match);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Toggle / update payment status with audit trail
+app.patch('/api/matches/:id/payment', verifyToken, async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+    if (match.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Sin permiso para modificar este partido.' });
+    }
+
+    const { paymentStatus, paymentMethod } = req.body;
+    const newStatus = paymentStatus || (match.paymentStatus === 'Pagado' ? 'Pendiente' : 'Pagado');
+    const isNowPaid = newStatus === 'Pagado';
+
+    await match.update({
+      paymentStatus: newStatus,
+      paidAt: isNowPaid ? (match.paidAt || new Date()) : null,
+      paymentMethod: isNowPaid ? (paymentMethod || match.paymentMethod || 'Transferencia') : null,
+    });
+
     res.json(match);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -396,6 +523,101 @@ app.delete('/api/matches/:id', verifyToken, async (req, res) => {
     await match.destroy();
     res.json({ message: 'Partido eliminado correctamente.' });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 5. OPTIMIZED FINANCIAL STATS AGGREGATION
+// ==========================================
+app.get('/api/stats/summary', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.role === 'admin' && req.query.userId ? req.query.userId : req.user.id;
+
+    // 1. Overall Totals with PostgreSQL direct aggregation
+    const [overall] = await sequelize.query(`
+      SELECT 
+        COUNT(*)::int AS "totalMatches",
+        COALESCE(SUM(fee), 0)::int AS "totalEarnings",
+        COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS "paidEarnings",
+        COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS "pendingEarnings",
+        COALESCE(SUM("yellowCards"), 0)::int AS "totalYellowCards",
+        COALESCE(SUM("redCards"), 0)::int AS "totalRedCards",
+        COALESCE(SUM("homeGoals" + "awayGoals"), 0)::int AS "totalGoals"
+      FROM matches
+      WHERE "userId" = :userId
+    `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
+
+    // 2. Monthly breakdown
+    const monthlyStats = await sequelize.query(`
+      SELECT 
+        SUBSTRING("date", 1, 7) AS "monthKey",
+        COUNT(*)::int AS count,
+        COALESCE(SUM(fee), 0)::int AS total,
+        COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS paid,
+        COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS pending
+      FROM matches
+      WHERE "userId" = :userId AND "date" IS NOT NULL
+      GROUP BY SUBSTRING("date", 1, 7)
+      ORDER BY "monthKey" DESC
+    `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
+
+    // 3. Tournament breakdown
+    const tournamentStats = await sequelize.query(`
+      SELECT 
+        COALESCE(NULLIF(tournament, ''), 'Sin Torneo') AS name,
+        COUNT(*)::int AS count,
+        COALESCE(SUM(fee), 0)::int AS total,
+        COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS paid,
+        COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS pending
+      FROM matches
+      WHERE "userId" = :userId
+      GROUP BY COALESCE(NULLIF(tournament, ''), 'Sin Torneo')
+      ORDER BY pending DESC, total DESC
+    `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
+
+    res.json({
+      ...(overall || {}),
+      monthlyStats,
+      tournamentStats,
+    });
+  } catch (err) {
+    console.error('Error fetching stats summary:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 6. ATOMIC INVOICE CONSECUTIVE GENERATION
+// ==========================================
+app.post('/api/invoices/next-number', verifyToken, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const userId = req.user.id;
+    const year = req.body.year || new Date().getFullYear();
+
+    let seq = await InvoiceSequence.findOne({
+      where: { userId, year },
+      lock: t.LOCK.UPDATE,
+      transaction: t,
+    });
+
+    if (!seq) {
+      seq = await InvoiceSequence.create(
+        { userId, year, currentNumber: 1 },
+        { transaction: t }
+      );
+    } else {
+      seq.currentNumber += 1;
+      await seq.save({ transaction: t });
+    }
+
+    await t.commit();
+    const formatted = `CC-${year}-${String(seq.currentNumber).padStart(3, '0')}`;
+    res.json({ invoiceNumber: formatted, number: seq.currentNumber, year });
+  } catch (err) {
+    await t.rollback();
+    console.error('Error generating invoice number:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -458,11 +680,12 @@ app.post('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
     if (existing) {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese correo electrónico.' });
     }
-    const bcrypt = await import('bcryptjs');
-    const hashedPassword = await bcrypt.default.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
-      name, email, password: hashedPassword,
-      refNumber: refNumber || '',
+      name: sanitizeName(name),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      refNumber: refNumber ? sanitizeName(refNumber) : '',
       role: role || 'user',
     });
     // Auto-create profile for new user
@@ -485,9 +708,9 @@ app.post('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
-    // alter:true keeps existing data while adding new columns
+    // alter:true keeps existing data while adding new columns and indexes safely
     await sequelize.sync({ alter: true });
-    console.log('✅ Tablas de la base de datos sincronizadas.');
+    console.log('✅ Tablas e índices de la base de datos sincronizados.');
 
     app.listen(PORT, () => {
       console.log(`🚀 Servidor COARC ejecutándose en el puerto ${PORT}`);

@@ -8,11 +8,15 @@ const Match = sequelize.define('Match', {
   },
   userId: {
     type: DataTypes.UUID,
-    allowNull: true, // allowNull:true for backward compat with existing rows
+    allowNull: true,
   },
   profileId: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  tournamentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
   },
   date: {
     type: DataTypes.STRING,
@@ -66,6 +70,14 @@ const Match = sequelize.define('Match', {
     type: DataTypes.STRING,
     defaultValue: 'Pendiente', // 'Pagado' or 'Pendiente'
   },
+  paidAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  paymentMethod: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   notes: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -80,6 +92,18 @@ const Match = sequelize.define('Match', {
   },
 }, {
   timestamps: true,
+  tableName: 'matches',
+  indexes: [
+    // Composite index for fast financial and dashboard aggregations
+    {
+      name: 'idx_matches_user_date_status',
+      fields: ['userId', 'date', 'paymentStatus'],
+    },
+    {
+      name: 'idx_matches_tournament',
+      fields: ['tournamentId'],
+    },
+  ],
 });
 
 export default Match;

@@ -5,15 +5,135 @@
     <link rel="icon" type="image/png" href="/pwa-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0b0c10" />
+    <meta name="theme-color" content="#10b981" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="COARC" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>COARC · Corporación Arbitral de Córdoba</title>
+    <style>
+      /* Minimalist Instant Splash Screen */
+      #splash-fallback {
+        position: fixed;
+        inset: 0;
+        background-color: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #f1f5f9;
+        overflow: hidden;
+      }
+
+      .splash-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        animation: splashFadeScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .splash-logo-wrapper {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        border-radius: 20px;
+        background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.2), transparent 70%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+      }
+
+      .splash-logo {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 16px;
+        filter: drop-shadow(0 8px 24px rgba(16, 185, 129, 0.35));
+      }
+
+      .splash-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin: 0;
+        color: #ffffff;
+      }
+
+      .splash-title span {
+        color: #10b981;
+      }
+
+      .splash-subtitle {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #94a3b8;
+        margin-top: 0.35rem;
+      }
+
+      /* Minimalist Linear Progress Bar */
+      .splash-progress-track {
+        width: 140px;
+        height: 3px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        margin-top: 2.25rem;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .splash-progress-bar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 45%;
+        background: linear-gradient(90deg, transparent, #10b981, #34d399, transparent);
+        border-radius: 3px;
+        animation: splashProgressFlow 1.2s infinite ease-in-out;
+      }
+
+      @keyframes splashFadeScale {
+        0% {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes splashProgressFlow {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(320%);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="splash-fallback">
+        <div class="splash-content">
+          <div class="splash-logo-wrapper">
+            <img src="/coarc-logo.png" alt="Escudo COARC" class="splash-logo" />
+          </div>
+          <h1 class="splash-title">COARC<span>.</span></h1>
+          <div class="splash-subtitle">Corporación Arbitral</div>
+          <div class="splash-progress-track">
+            <div class="splash-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -7,8 +7,16 @@ import {
   WhistleIcon,
   StatsIcon,
   ProfilesIcon,
+  CalendarIcon,
   PlusIcon,
   MenuIcon,
+  CloseIcon,
+  LogoutIcon,
+  ShieldIcon,
+  SunIcon,
+  MoonIcon,
+  ReceiptText,
+  UserIcon,
 } from './components/Icons';
 
 import Dashboard from './components/Dashboard';
@@ -22,38 +30,6 @@ import CalendarView from './components/CalendarView';
 import InvoiceModal from './components/InvoiceModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
-
-// Inline Icons
-const LogoutIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-    <polyline points="16 17 21 12 16 7"/>
-    <line x1="21" y1="12" x2="9" y2="12"/>
-  </svg>
-);
-const AdminIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </svg>
-);
-const CalendarIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-  </svg>
-);
-const SunIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-  </svg>
-);
-const MoonIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-  </svg>
-);
 
 const AppContent = () => {
   const { activeProfile } = useRefContext();
@@ -77,27 +53,40 @@ const AppContent = () => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
 
-  const handleEditMatch = (match) => { setEditingMatch(match); setIsMatchModalOpen(true); };
-  const handleAddNewMatch = () => { setEditingMatch(null); setIsMatchModalOpen(true); };
+  const handleEditMatch = (match) => {
+    setEditingMatch(match);
+    setIsMatchModalOpen(true);
+  };
+  const handleAddNewMatch = () => {
+    setEditingMatch(null);
+    setIsMatchModalOpen(true);
+  };
 
   const navItems = [
-    { id: 'dashboard', label: 'Panel de Control', icon: <DashboardIcon /> },
-    { id: 'matches', label: 'Mis Partidos', icon: <WhistleIcon /> },
-    { id: 'calendar', label: 'Calendario', icon: <CalendarIcon /> },
-    { id: 'stats', label: 'Estadísticas e Ingresos', icon: <StatsIcon /> },
-    { id: 'profiles', label: 'Perfiles', icon: <ProfilesIcon /> },
-    ...(isAdmin ? [{ id: 'admin', label: 'Administración', icon: <AdminIcon size={20} /> }] : []),
+    { id: 'dashboard', label: 'Panel de Control', icon: <DashboardIcon size={20} /> },
+    { id: 'matches', label: 'Mis Partidos', icon: <WhistleIcon size={20} /> },
+    { id: 'calendar', label: 'Calendario', icon: <CalendarIcon size={20} /> },
+    { id: 'stats', label: 'Estadísticas e Ingresos', icon: <StatsIcon size={20} /> },
+    { id: 'profiles', label: 'Perfiles', icon: <ProfilesIcon size={20} /> },
+    ...(isAdmin ? [{ id: 'admin', label: 'Administración', icon: <ShieldIcon size={20} /> }] : []),
   ];
 
   const renderTabContent = () => {
     switch (currentTab) {
-      case 'dashboard': return <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
-      case 'matches': return <MatchList onEditMatch={handleEditMatch} onAddMatch={handleAddNewMatch} />;
-      case 'calendar': return <CalendarView onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
-      case 'stats': return <Stats onOpenInvoiceModal={() => setIsInvoiceModalOpen(true)} />;
-      case 'profiles': return <Profiles />;
-      case 'admin': return isAdmin ? <AdminPanel /> : <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
-      default: return <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
+      case 'dashboard':
+        return <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
+      case 'matches':
+        return <MatchList onEditMatch={handleEditMatch} onAddMatch={handleAddNewMatch} />;
+      case 'calendar':
+        return <CalendarView onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
+      case 'stats':
+        return <Stats onOpenInvoiceModal={() => setIsInvoiceModalOpen(true)} />;
+      case 'profiles':
+        return <Profiles />;
+      case 'admin':
+        return isAdmin ? <AdminPanel /> : <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
+      default:
+        return <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
     }
   };
 
@@ -108,33 +97,50 @@ const AppContent = () => {
       calendar: 'Calendario de Partidos',
       stats: 'Estadísticas e Ingresos',
       profiles: 'Perfiles y Respaldos',
-      admin: 'Administración COARC'
+      admin: 'Administración COARC',
     };
     return titles[currentTab] || 'COARC';
   };
 
   return (
     <div className="app-container">
-      {/* Mobile Header */}
+      {/* Mobile Header (< 768px) - Clean without redundant action buttons */}
       <header className="mobile-header">
         <button className="menu-toggle-btn" onClick={toggleSidebar} aria-label="Abrir menú">
-          <MenuIcon size={24} />
+          <MenuIcon size={22} />
         </button>
-        <img src="/coarc-logo.png" alt="COARC Logo" style={{ height: '36px', objectFit: 'contain' }} />
-        <button className="btn-primary" style={{ padding: '0.4rem', borderRadius: 'var(--radius-sm)' }} onClick={handleAddNewMatch} aria-label="Registrar Partido">
-          <PlusIcon size={18} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <img src="/coarc-logo.png" alt="COARC Logo" style={{ height: '32px', objectFit: 'contain' }} />
+          <span style={{ fontWeight: '800', fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--color-primary)' }}>
+            COARC<span style={{ color: 'var(--color-text)' }}>.</span>
+          </span>
+        </div>
+        <button
+          onClick={() => setIsDark(!isDark)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-text-muted)',
+            cursor: 'pointer',
+            padding: '0.4rem',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          aria-label="Cambiar tema"
+        >
+          {isDark ? <SunIcon size={20} /> : <MoonIcon size={20} />}
         </button>
       </header>
 
       {/* Sidebar Overlay (Mobile) */}
       <div className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`} onClick={closeSidebar} />
 
-      {/* Sidebar */}
+      {/* Sidebar (Desktop >= 768px and Drawer on mobile) */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div>
           {/* Brand with Logo */}
           <div className="sidebar-brand" style={{ flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem 1rem 0.75rem' }}>
-            <img src="/coarc-logo.png" alt="COARC Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', borderRadius: '8px' }} />
+            <img src="/coarc-logo.png" alt="COARC Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: '8px' }} />
             <div style={{ textAlign: 'center' }}>
               <div className="brand-title" style={{ fontSize: '1.2rem' }}>COARC<span>.</span></div>
               <div className="brand-subtitle" style={{ fontSize: '0.68rem', letterSpacing: '0.05em' }}>Corporación Arbitral</div>
@@ -222,24 +228,94 @@ const AppContent = () => {
                 COARC • {user?.name || activeProfile.name}
               </p>
             </div>
+
+            {/* Desktop Action Buttons (hidden on mobile to prevent redundancy with FAB and Bottom Nav) */}
             {currentTab !== 'profiles' && currentTab !== 'admin' && (
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button className="btn btn-secondary" onClick={() => setIsInvoiceModalOpen(true)}>
-                  📄 Cuenta de Cobro
+              <div className="desktop-header-actions" style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                  onClick={() => setIsInvoiceModalOpen(true)}
+                >
+                  <ReceiptText size={16} />
+                  <span>Cuenta de Cobro</span>
                 </button>
-                <button className="btn btn-primary" onClick={handleAddNewMatch} style={{ display: window.innerWidth > 1024 ? 'inline-flex' : 'none' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleAddNewMatch}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
                   <PlusIcon size={18} />
                   <span>Registrar Partido</span>
                 </button>
               </div>
             )}
           </div>
+
           {renderTabContent()}
         </div>
       </main>
 
-      <MatchForm isOpen={isMatchModalOpen} onClose={() => { setIsMatchModalOpen(false); setEditingMatch(null); }} editingMatch={editingMatch} />
-      <InvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} />
+      {/* FLOATING ACTION BUTTON (FAB) - Circular Emerald (#10b981) for quick match registration */}
+      <button
+        className="mobile-fab-btn"
+        onClick={handleAddNewMatch}
+        aria-label="Registrar Nuevo Partido"
+      >
+        <PlusIcon size={26} strokeWidth={2.5} />
+      </button>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR (< 768px) - 4 thumb-friendly items */}
+      <nav className="mobile-bottom-nav">
+        <button
+          className={`bottom-nav-item ${currentTab === 'dashboard' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('dashboard')}
+          aria-label="Panel de Control"
+        >
+          <DashboardIcon size={20} />
+          <span>Dashboard</span>
+        </button>
+
+        <button
+          className={`bottom-nav-item ${currentTab === 'matches' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('matches')}
+          aria-label="Mis Partidos"
+        >
+          <WhistleIcon size={20} />
+          <span>Partidos</span>
+        </button>
+
+        {/* Empty space reservation for central elevated FAB */}
+        <div className="bottom-nav-fab-placeholder" />
+
+        <button
+          className={`bottom-nav-item ${currentTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('calendar')}
+          aria-label="Calendario"
+        >
+          <CalendarIcon size={20} />
+          <span>Calendario</span>
+        </button>
+
+        <button
+          className={`bottom-nav-item ${currentTab === 'profiles' || isSidebarOpen ? 'active' : ''}`}
+          onClick={() => toggleSidebar()}
+          aria-label="Menú y Perfiles"
+        >
+          <UserIcon size={20} />
+          <span>Perfil / Más</span>
+        </button>
+      </nav>
+
+      <MatchForm
+        isOpen={isMatchModalOpen}
+        onClose={() => { setIsMatchModalOpen(false); setEditingMatch(null); }}
+        editingMatch={editingMatch}
+      />
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+      />
     </div>
   );
 };
@@ -251,7 +327,7 @@ const AuthGate = () => {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(0,200,100,0.2)', borderTopColor: 'var(--color-primary)', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(16, 185, 129, 0.2)', borderTopColor: 'var(--color-primary)', animation: 'spin 0.8s linear infinite' }} />
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Verificando sesión...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>

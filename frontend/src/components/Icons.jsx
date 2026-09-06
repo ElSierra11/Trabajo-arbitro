@@ -1,16 +1,109 @@
 import React from 'react';
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Calendar as CalendarLucide,
+  User as UserLucide,
+  Menu as MenuLucide,
+  ReceiptText,
+  FileText,
+  FileSpreadsheet,
+  PlusCircle,
+  Plus,
+  History,
+  Layers,
+  CircleDollarSign,
+  Clock,
+  ClockAlert,
+  Moon as MoonLucide,
+  Sun as SunLucide,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Edit3,
+  Key as KeyLucide,
+  X as XLucide,
+  Shield as ShieldLucide,
+  LogOut,
+  Download as DownloadLucide,
+  Upload as UploadLucide,
+  Check as CheckLucide,
+  MoreVertical,
+  SlidersHorizontal,
+  RefreshCw,
+} from 'lucide-react';
 
-export const DashboardIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect x="3" y="3" width="7" height="9" />
-    <rect x="14" y="3" width="7" height="5" />
-    <rect x="14" y="12" width="7" height="9" />
-    <rect x="3" y="16" width="7" height="5" />
-  </svg>
-);
+// ==========================================
+// LUCIDE ICONS EXPORTS
+// ==========================================
+export {
+  LayoutDashboard,
+  ClipboardList,
+  ReceiptText,
+  FileText,
+  FileSpreadsheet,
+  PlusCircle,
+  Plus,
+  History,
+  Layers,
+  CircleDollarSign,
+  Clock,
+  ClockAlert,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Edit3,
+  MoreVertical,
+  SlidersHorizontal,
+  RefreshCw,
+};
 
-export const WhistleIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+// Aliases with consistent sizing defaults
+export const DashboardIcon = ({ size = 20, className = '' }) => <LayoutDashboard size={size} className={className} />;
+export const CalendarIcon = ({ size = 20, className = '' }) => <CalendarLucide size={size} className={className} />;
+export const UserIcon = ({ size = 20, className = '' }) => <UserLucide size={size} className={className} />;
+export const MenuIcon = ({ size = 20, className = '' }) => <MenuLucide size={size} className={className} />;
+export const PlusIcon = ({ size = 20, className = '' }) => <Plus size={size} className={className} />;
+export const TrashIcon = ({ size = 20, className = '' }) => <Trash2 size={size} className={className} />;
+export const EditIcon = ({ size = 20, className = '' }) => <Edit3 size={size} className={className} />;
+export const CloseIcon = ({ size = 20, className = '' }) => <XLucide size={size} className={className} />;
+export const DollarIcon = ({ size = 20, className = '' }) => <CircleDollarSign size={size} className={className} />;
+export const CheckIcon = ({ size = 20, className = '' }) => <CheckLucide size={size} className={className} />;
+export const PendingIcon = ({ size = 20, className = '' }) => <Clock size={size} className={className} />;
+export const UploadIcon = ({ size = 20, className = '' }) => <UploadLucide size={size} className={className} />;
+export const DownloadIcon = ({ size = 20, className = '' }) => <DownloadLucide size={size} className={className} />;
+export const SunIcon = ({ size = 20, className = '' }) => <SunLucide size={size} className={className} />;
+export const MoonIcon = ({ size = 20, className = '' }) => <MoonLucide size={size} className={className} />;
+export const KeyIcon = ({ size = 20, className = '' }) => <KeyLucide size={size} className={className} />;
+export const ShieldIcon = ({ size = 20, className = '' }) => <ShieldLucide size={size} className={className} />;
+export const LogoutIcon = ({ size = 20, className = '' }) => <LogOut size={size} className={className} />;
+
+// ==========================================
+// SPORT-SPECIFIC VECTOR ICONS (SVG)
+// ==========================================
+
+// Whistle vector icon
+export const WhistleIcon = ({ size = 20, className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
     <path d="M18.5 13H14a3 3 0 0 0-3-3H4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1.5" />
     <path d="M9 14h2" />
     <path d="M14 17a3 3 0 0 0 3-3V7.5a2.5 2.5 0 0 0-5 0V10" />
@@ -18,106 +111,20 @@ export const WhistleIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-export const StatsIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="18" y1="20" x2="18" y2="10" />
-    <line x1="12" y1="20" x2="12" y2="4" />
-    <line x1="6" y1="20" x2="6" y2="14" />
-  </svg>
-);
-
-export const ProfilesIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
-export const PlusIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-export const TrashIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    <line x1="10" y1="11" x2="10" y2="17" />
-    <line x1="14" y1="11" x2="14" y2="17" />
-  </svg>
-);
-
-export const EditIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-
-export const CloseIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-export const MenuIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="3" y1="12" x2="21" y2="12" />
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
-
-export const DollarIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="12" y1="1" x2="12" y2="23" />
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-  </svg>
-);
-
-export const CardIcon = ({ size = 20, color = "currentColor", className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect x="5" y="3" width="14" height="18" rx="2" ry="2" fill={color} />
-  </svg>
-);
-
-export const IncidentIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-    <line x1="12" y1="9" x2="12" y2="13" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
-);
-
-export const CheckIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-export const PendingIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-);
-
-
-export const UploadIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="17 8 12 3 7 8" />
-    <line x1="12" y1="3" x2="12" y2="15" />
-  </svg>
-);
-
-export const SoccerBallIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+// Soccer ball vector icon
+export const SoccerBallIcon = ({ size = 20, className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
     <circle cx="12" cy="12" r="10" />
     <path d="m12 2-2 4 4 0-2-4z" />
     <path d="m12 22-2-4h4l-2 4z" />
@@ -128,10 +135,81 @@ export const SoccerBallIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-export const DownloadIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
+// Generic Card Icon with custom color
+export const CardIcon = ({ size = 20, color = 'currentColor', className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={color}
+    stroke={color}
+    strokeWidth="1.5"
+    className={className}
+  >
+    <rect x="5" y="3" width="14" height="18" rx="2.5" ry="2.5" />
   </svg>
 );
+
+// Stylized Yellow Referee Card SVG (curved corners, gradient, subtle border)
+export const YellowCardIcon = ({ size = 18, className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={Math.round(size * 1.33)}
+    viewBox="0 0 15 20"
+    className={className}
+    style={{ verticalAlign: 'middle', display: 'inline-block', flexShrink: 0 }}
+  >
+    <defs>
+      <linearGradient id="yellowCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fde047" />
+        <stop offset="100%" stopColor="#eab308" />
+      </linearGradient>
+    </defs>
+    <rect
+      x="1"
+      y="1"
+      width="13"
+      height="18"
+      rx="2.5"
+      fill="url(#yellowCardGrad)"
+      stroke="#ca8a04"
+      strokeWidth="1.2"
+    />
+  </svg>
+);
+
+// Stylized Red Referee Card SVG (curved corners, gradient, subtle border)
+export const RedCardIcon = ({ size = 18, className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={Math.round(size * 1.33)}
+    viewBox="0 0 15 20"
+    className={className}
+    style={{ verticalAlign: 'middle', display: 'inline-block', flexShrink: 0 }}
+  >
+    <defs>
+      <linearGradient id="redCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f87171" />
+        <stop offset="100%" stopColor="#dc2626" />
+      </linearGradient>
+    </defs>
+    <rect
+      x="1"
+      y="1"
+      width="13"
+      height="18"
+      rx="2.5"
+      fill="url(#redCardGrad)"
+      stroke="#b91c1c"
+      strokeWidth="1.2"
+    />
+  </svg>
+);
+
+// Backwards compatibility
+export const StatsIcon = ({ size = 20, className = '' }) => <History size={size} className={className} />;
+export const ProfilesIcon = ({ size = 20, className = '' }) => <UserLucide size={size} className={className} />;
+export const IncidentIcon = ({ size = 20, className = '' }) => <AlertCircle size={size} className={className} />;

@@ -165,11 +165,52 @@ export const RefProvider = ({ children }) => {
     }
   };
 
-  const togglePaymentStatus = async (id) => {
+  const togglePaymentStatus = async (id, paymentMethod = 'Transferencia') => {
     const match = matches.find(m => m.id === id);
     if (!match) return;
-    const newStatus = match.paymentStatus === 'Pagado' ? 'Pendiente' : 'Pagado';
-    await updateMatch(id, { paymentStatus: newStatus });
+
+    const previousStatus = match.paymentStatus;
+    const previousPaidAt = match.paidAt;
+    const previousMethod = match.paymentMethod;
+
+    const newStatus = previousStatus === 'Pagado' ? 'Pendiente' : 'Pagado';
+    const isNowPaid = newStatus === 'Pagado';
+    const newPaidAt = isNowPaid ? new Date().toISOString() : null;
+    const newMethod = isNowPaid ? paymentMethod : null;
+
+    // 1. Optimistic Update in UI immediately
+    setMatches(prev => prev.map(m => (m.id === id ? {
+      ...m,
+      paymentStatus: newStatus,
+      paidAt: newPaidAt,
+      paymentMethod: newMethod,
+    } : m)));
+
+    // 2. Persist to Backend API via dedicated PATCH
+    try {
+      const res = await fetch(`${API_URL}/matches/${id}/payment`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          paymentStatus: newStatus,
+          paymentMethod: newMethod,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Error al sincronizar estado de pago con el servidor');
+      const updated = await res.json();
+      setMatches(prev => prev.map(m => (m.id === id ? updated : m)));
+    } catch (err) {
+      console.error('Optimistic payment toggle failed, rolling back:', err);
+      // 3. Revert UI state on failure
+      setMatches(prev => prev.map(m => (m.id === id ? {
+        ...m,
+        paymentStatus: previousStatus,
+        paidAt: previousPaidAt,
+        paymentMethod: previousMethod,
+      } : m)));
+      alert('No se pudo actualizar el estado en el servidor. Se revirtió el cambio.');
+    }
   };
 
   // 4. Import / Export Data

@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
+import { ChevronLeft, ChevronRight, PlusIcon, EditIcon, WhistleIcon } from './Icons';
+import BottomSheet from './BottomSheet';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val || 0);
@@ -12,6 +14,8 @@ const MONTH_NAMES = [
 const CalendarView = ({ onAddMatch, onEditMatch }) => {
   const { matches } = useRefContext();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDayMatches, setSelectedDayMatches] = useState(null);
+  const [selectedDateStr, setSelectedDateStr] = useState('');
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -65,6 +69,16 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  const handleDayClick = (cell, dayMatches) => {
+    if (!cell.isCurrentMonth || !cell.dateStr) return;
+    if (window.innerWidth < 768) {
+      if (dayMatches.length > 0) {
+        setSelectedDayMatches(dayMatches);
+        setSelectedDateStr(cell.dateStr);
+      }
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -79,18 +93,35 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem' }} onClick={prevMonth}>
-            ◀ Mes Anterior
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary"
+            style={{ padding: '0.4rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            onClick={prevMonth}
+            aria-label="Mes Anterior"
+          >
+            <ChevronLeft size={16} />
+            <span>Mes Anterior</span>
           </button>
           <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem' }} onClick={today}>
             Hoy
           </button>
-          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem' }} onClick={nextMonth}>
-            Mes Siguiente ▶
+          <button
+            className="btn btn-secondary"
+            style={{ padding: '0.4rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            onClick={nextMonth}
+            aria-label="Mes Siguiente"
+          >
+            <span>Mes Siguiente</span>
+            <ChevronRight size={16} />
           </button>
-          <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', marginLeft: '0.5rem' }} onClick={onAddMatch}>
-            + Agendar Partido
+          <button
+            className="btn btn-primary"
+            style={{ padding: '0.4rem 0.8rem', marginLeft: '0.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            onClick={onAddMatch}
+          >
+            <PlusIcon size={16} />
+            <span>Agendar Partido</span>
           </button>
         </div>
       </div>
@@ -106,13 +137,18 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
           {calendarDays.map((cell, idx) => {
             const dayMatches = cell.dateStr ? matchesByDate[cell.dateStr] || [] : [];
             const isToday = cell.dateStr === todayStr;
+            const hasMatches = dayMatches.length > 0;
 
             return (
               <div
                 key={idx}
+                onClick={() => handleDayClick(cell, dayMatches)}
+                className={`calendar-cell ${hasMatches ? 'has-matches' : ''}`}
                 style={{
-                  minHeight: '90px',
-                  backgroundColor: cell.isCurrentMonth ? (isToday ? 'rgba(0,200,100,0.06)' : 'var(--color-surface)') : 'rgba(0,0,0,0.04)',
+                  minHeight: '85px',
+                  backgroundColor: cell.isCurrentMonth
+                    ? (isToday ? 'rgba(0,200,100,0.08)' : 'var(--color-surface)')
+                    : 'rgba(0,0,0,0.04)',
                   border: isToday ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '0.4rem',
@@ -120,6 +156,8 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                   flexDirection: 'column',
                   gap: '0.2rem',
                   opacity: cell.isCurrentMonth ? 1 : 0.45,
+                  cursor: cell.isCurrentMonth && hasMatches ? 'pointer' : 'default',
+                  transition: 'background-color 0.15s',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -130,19 +168,40 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                   }}>
                     {cell.day}
                   </span>
-                  {dayMatches.length > 0 && (
-                    <span style={{ fontSize: '0.65rem', background: 'var(--color-surface-hover)', borderRadius: '3px', padding: '0.05rem 0.3rem', color: 'var(--color-text-muted)' }}>
-                      {dayMatches.length} {dayMatches.length === 1 ? 'partido' : 'partidos'}
+
+                  {/* Desktop match count badge */}
+                  {hasMatches && (
+                    <span className="desktop-match-count" style={{ fontSize: '0.65rem', background: 'var(--color-surface-hover)', borderRadius: '3px', padding: '0.05rem 0.3rem', color: 'var(--color-text-muted)' }}>
+                      {dayMatches.length}
                     </span>
                   )}
                 </div>
 
-                {/* Day match tags */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflowY: 'auto', maxHeight: '75px' }}>
+                {/* MOBILE VIEW: Indicator Dots (< 768px) */}
+                <div className="calendar-dots-mobile" style={{ display: 'none', gap: '3px', marginTop: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {dayMatches.slice(0, 4).map((m, i) => (
+                    <span
+                      key={m.id || i}
+                      style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        backgroundColor: m.paymentStatus === 'Pagado' ? 'var(--color-success)' : 'var(--color-pending)',
+                        display: 'inline-block'
+                      }}
+                    />
+                  ))}
+                  {dayMatches.length > 4 && (
+                    <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>+</span>
+                  )}
+                </div>
+
+                {/* DESKTOP VIEW: Full match tags (>= 768px) */}
+                <div className="calendar-tags-desktop" style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflowY: 'auto', maxHeight: '75px' }}>
                   {dayMatches.map(m => (
                     <div
                       key={m.id}
-                      onClick={() => onEditMatch(m)}
+                      onClick={(e) => { e.stopPropagation(); onEditMatch(m); }}
                       title={`${m.homeTeam} vs ${m.awayTeam} - ${formatCurrency(m.fee)}`}
                       style={{
                         padding: '0.2rem 0.35rem',
@@ -167,6 +226,99 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
           })}
         </div>
       </div>
+
+      {/* MOBILE BOTTOM SHEET FOR DAY MATCHES */}
+      <BottomSheet
+        isOpen={Boolean(selectedDayMatches)}
+        onClose={() => setSelectedDayMatches(null)}
+        title={`Partidos del ${selectedDateStr}`}
+        subtitle={`${selectedDayMatches?.length || 0} ${selectedDayMatches?.length === 1 ? 'partido agendado' : 'partidos agendados'}`}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {selectedDayMatches?.map(m => (
+            <div
+              key={m.id}
+              className="card"
+              style={{
+                padding: '0.85rem',
+                backgroundColor: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)'
+              }}
+            >
+              <div className="flex-between" style={{ marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--color-text-muted)' }}>
+                  {m.tournament || 'Torneo General'} • {m.category || 'Cat. Libre'}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    fontWeight: '700',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '4px',
+                    backgroundColor: m.paymentStatus === 'Pagado' ? 'rgba(0,200,100,0.12)' : 'rgba(245,158,11,0.12)',
+                    color: m.paymentStatus === 'Pagado' ? 'var(--color-success)' : 'var(--color-pending)'
+                  }}
+                >
+                  {m.paymentStatus === 'Pagado' ? 'PAGADO' : 'PENDIENTE'}
+                </span>
+              </div>
+
+              <div style={{ fontWeight: '700', fontSize: '0.95rem', margin: '0.25rem 0' }}>
+                {m.homeTeam} <span style={{ color: 'var(--color-primary)' }}>vs</span> {m.awayTeam}
+              </div>
+
+              <div className="flex-between" style={{ marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{m.role || 'Central'} • </span>
+                  <span style={{ fontWeight: '700', color: 'var(--color-accent)', fontSize: '0.85rem' }}>{formatCurrency(m.fee)}</span>
+                </div>
+                <button
+                  className="btn btn-secondary"
+                  style={{ minHeight: '44px', padding: '0.35rem 0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}
+                  onClick={() => {
+                    setSelectedDayMatches(null);
+                    onEditMatch(m);
+                  }}
+                >
+                  <EditIcon size={15} />
+                  <span>Ver / Editar</span>
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', minHeight: '48px', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            onClick={() => {
+              setSelectedDayMatches(null);
+              onAddMatch();
+            }}
+          >
+            <PlusIcon size={18} />
+            <span>+ Registrar Nuevo Partido</span>
+          </button>
+        </div>
+      </BottomSheet>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .calendar-cell {
+            min-height: 52px !important;
+            padding: 0.25rem !important;
+          }
+          .desktop-match-count {
+            display: none !important;
+          }
+          .calendar-tags-desktop {
+            display: none !important;
+          }
+          .calendar-dots-mobile {
+            display: flex !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
-import { WhistleIcon, DollarIcon, CardIcon, PendingIcon } from './Icons';
+import {
+  WhistleIcon,
+  ReceiptText,
+  FileSpreadsheet,
+  YellowCardIcon,
+  RedCardIcon,
+  CircleDollarSign,
+  Clock,
+  CheckCircle2,
+} from './Icons';
 import { exportFinancialsToPDF, exportMatchesToExcel } from '../utils/exportUtils';
 
 const formatCurrency = (val) =>
@@ -28,31 +37,33 @@ const Stats = ({ onOpenInvoiceModal }) => {
       categories[cat].yellow += m.yellowCards || 0;
       categories[cat].red += m.redCards || 0;
     });
-    return Object.values(categories).sort((a, b) => b.earnings - a.earnings);
+
+    return Object.values(categories);
   }, [matches]);
 
-  // 2. Tournament Debt Breakdown (Who owes how much)
+  // 2. Calculate debt / pending by tournament
   const tournamentDebts = useMemo(() => {
     const map = {};
     matches.forEach(m => {
-      const t = m.tournament || 'Torneo General / Amistoso';
+      const t = m.tournament || 'Sin Torneo';
       if (!map[t]) {
-        map[t] = { name: t, total: 0, paid: 0, pending: 0, count: 0 };
+        map[t] = { name: t, count: 0, total: 0, paid: 0, pending: 0 };
       }
       map[t].count += 1;
       map[t].total += m.fee || 0;
       if (m.paymentStatus === 'Pagado') map[t].paid += m.fee || 0;
       else map[t].pending += m.fee || 0;
     });
+
     return Object.values(map).sort((a, b) => b.pending - a.pending);
   }, [matches]);
 
-  // 3. Calculate statistics by role
+  // 3. Stats by Referee Role
   const roleStats = useMemo(() => {
     const roles = {
       'Árbitro Central': { name: 'Árbitro Central', count: 0, earnings: 0, yellow: 0, red: 0 },
       'Asistente / Alterna': { name: 'Asistente / Alterna', count: 0, earnings: 0, yellow: 0, red: 0 },
-      'Cuarto Árbitro': { name: 'Cuarto Árbitro', count: 0, earnings: 0, yellow: 0, red: 0 }
+      'Cuarto Árbitro': { name: 'Cuarto Árbitro', count: 0, earnings: 0, yellow: 0, red: 0 },
     };
 
     matches.forEach(m => {
@@ -96,21 +107,109 @@ const Stats = ({ onOpenInvoiceModal }) => {
             <p className="text-muted" style={{ fontSize: '0.8rem' }}>Identifica rápidamente qué organización o torneo tiene montos pendientes por pagar</p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem 0.85rem', fontSize: '0.85rem' }} onClick={() => exportFinancialsToPDF(stats, 'COARC')}>
-              📄 Informe PDF
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '0.5rem 0.85rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => exportFinancialsToPDF(stats, 'COARC')}
+            >
+              <ReceiptText size={16} />
+              <span>Informe PDF</span>
             </button>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem 0.85rem', fontSize: '0.85rem' }} onClick={() => exportMatchesToExcel(matches, 'COARC_Finanzas')}>
-              📊 Reporte Excel
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '0.5rem 0.85rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => exportMatchesToExcel(matches, 'COARC_Finanzas')}
+            >
+              <FileSpreadsheet size={16} />
+              <span>Reporte Excel</span>
             </button>
             {stats.pendingEarnings > 0 && (
-              <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }} onClick={onOpenInvoiceModal}>
-                📄 Cuenta de Cobro PDF
+              <button
+                className="btn btn-primary"
+                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                onClick={onOpenInvoiceModal}
+              >
+                <ReceiptText size={16} />
+                <span>Cuenta de Cobro PDF</span>
               </button>
             )}
           </div>
         </div>
 
-        <div className="matches-table-container">
+        {/* Mobile & Tablet Card List (< 1024px) */}
+        <div className="debt-cards-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {tournamentDebts.map(t => (
+            <div
+              key={t.name}
+              className="card"
+              style={{
+                padding: '1rem',
+                backgroundColor: 'var(--color-surface)',
+                border: t.pending > 0 ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)'
+              }}
+            >
+              <div className="flex-between" style={{ marginBottom: '0.75rem' }}>
+                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--color-text)' }}>{t.name}</span>
+                <span style={{
+                  background: 'rgba(0,200,100,0.1)',
+                  color: 'var(--color-primary)',
+                  border: '1px solid rgba(0,200,100,0.25)',
+                  borderRadius: '6px',
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.75rem',
+                  fontWeight: '700'
+                }}>
+                  {t.count} {t.count === 1 ? 'partido' : 'partidos'}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem', background: 'rgba(0,0,0,0.15)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
+                <div>
+                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>Total Facturado</div>
+                  <div style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--color-accent)' }}>{formatCurrency(t.total)}</div>
+                </div>
+                <div>
+                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>Cobrado</div>
+                  <div style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-success)' }}>{formatCurrency(t.paid)}</div>
+                </div>
+                <div>
+                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>Por Cobrar</div>
+                  <div style={{
+                    fontWeight: '700',
+                    fontSize: '0.85rem',
+                    color: t.pending > 0 ? 'var(--color-pending)' : 'var(--color-text-muted)'
+                  }}>
+                    {t.pending > 0 ? formatCurrency(t.pending) : 'Al día'}
+                  </div>
+                </div>
+              </div>
+
+              {t.pending > 0 && (
+                <button
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    minHeight: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.85rem',
+                    fontWeight: '600'
+                  }}
+                  onClick={onOpenInvoiceModal}
+                >
+                  <ReceiptText size={18} />
+                  <span>Generar Cuenta de Cobro</span>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table (>= 1024px) */}
+        <div className="matches-table-container debt-table-desktop">
           <table className="matches-table">
             <thead>
               <tr>
@@ -140,8 +239,13 @@ const Stats = ({ onOpenInvoiceModal }) => {
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     {t.pending > 0 && (
-                      <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onOpenInvoiceModal}>
-                        Cobrar PDF
+                      <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                        onClick={onOpenInvoiceModal}
+                      >
+                        <ReceiptText size={14} />
+                        <span>Cobrar PDF</span>
                       </button>
                     )}
                   </td>
@@ -163,9 +267,9 @@ const Stats = ({ onOpenInvoiceModal }) => {
                 <tr>
                   <th>Mes</th>
                   <th style={{ textAlign: 'center' }}>Partidos</th>
-                  <th>Ganancias</th>
-                  <th>Cobrado</th>
-                  <th>Pendiente</th>
+                  <th>Total</th>
+                  <th style={{ color: 'var(--color-success)' }}>Cobrado</th>
+                  <th style={{ color: 'var(--color-pending)' }}>Pendiente</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,7 +336,13 @@ const Stats = ({ onOpenInvoiceModal }) => {
                   <td style={{ color: 'var(--color-accent)', fontWeight: '700' }}>{formatCurrency(cat.earnings)}</td>
                   <td>{formatCurrency(Math.round(cat.earnings / cat.count))}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <span style={{ fontWeight: '600' }}>{cat.yellow}</span> <span style={{ opacity: 0.3 }}>/</span> <span style={{ fontWeight: '600', color: 'var(--color-red-card)' }}>{cat.red}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center' }}>
+                      <YellowCardIcon size={14} />
+                      <span style={{ fontWeight: '600' }}>{cat.yellow}</span>
+                      <span style={{ opacity: 0.3, margin: '0 0.2rem' }}>|</span>
+                      <RedCardIcon size={14} />
+                      <span style={{ fontWeight: '600', color: 'var(--color-red-card)' }}>{cat.red}</span>
+                    </span>
                   </td>
                 </tr>
               ))}

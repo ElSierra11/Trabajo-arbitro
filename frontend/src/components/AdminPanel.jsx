@@ -8,25 +8,7 @@ const formatCurrency = (val) =>
 
 const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-// Icons inline
-const UserIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const ShieldIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-  </svg>
-);
-const PlusCircleIcon = ({ size = 18 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-  </svg>
-);
-const XIcon = ({ size = 16 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-);
+import { UserIcon, ShieldIcon, PlusCircle, CloseIcon, CheckCircle2, FileSpreadsheet, KeyIcon } from './Icons';
 
 const AdminPanel = () => {
   const { token } = useAuth();
@@ -78,7 +60,7 @@ const AdminPanel = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al restablecer contraseña');
-      setSuccess(`✅ ${data.message}`);
+      setSuccess(data.message || 'Contraseña restablecida correctamente');
     } catch (e) {
       setError(e.message);
     }
@@ -101,7 +83,7 @@ const AdminPanel = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al crear árbitro');
-      setSuccess(`✅ Árbitro "${form.name}" creado correctamente.`);
+      setSuccess(`Árbitro "${form.name}" creado correctamente.`);
       setForm({ name: '', email: '', password: '', refNumber: '', role: 'user' });
       setTab('users');
       loadUsers();
@@ -170,20 +152,26 @@ const AdminPanel = () => {
               <UserIcon size={14} /> Árbitros ({users.length})
             </button>
             <button style={tabStyle(tab === 'create')} onClick={() => { setTab('create'); setError(null); setSuccess(null); }}>
-              <PlusCircleIcon size={14} /> Crear Árbitro
+              <PlusCircle size={14} /> Crear Árbitro
             </button>
           </div>
 
           <button
             className="btn btn-secondary"
-            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             onClick={() => {
-              const headers = ["ID Árbitro", "Nombre Completo", "Correo Electrónico", "N° Registro", "Partidos Dirigidos", "Total Facturado COP", "Total Cobrado COP", "Rol Sistema", "Fecha Registro"];
+              const headers = ['Nombre', 'Correo', 'N_Arbitro', 'Rol', 'Partidos', 'Ingresos_Totales', 'Ingresos_Cobrados'];
               const rows = users.map(u => [
-                u.id, `"${u.name || ''}"`, `"${u.email || ''}"`, `"${u.refNumber || ''}"`, u.matchCount || 0, u.totalEarnings || 0, u.paidEarnings || 0, u.role === 'admin' ? 'Administrador' : 'Árbitro', u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-CO') : ''
+                `"${u.name}"`,
+                `"${u.email}"`,
+                `"${u.refNumber || ''}"`,
+                `"${u.role}"`,
+                u.matchCount || 0,
+                u.totalEarnings || 0,
+                u.paidEarnings || 0,
               ]);
-              const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
@@ -191,21 +179,25 @@ const AdminPanel = () => {
               a.click();
             }}
           >
-            📊 Exportar Reporte Master (CSV)
+            <FileSpreadsheet size={15} />
+            <span>Exportar Reporte Master (CSV)</span>
           </button>
         </div>
 
         {/* Alerts */}
         {error && (
           <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--color-red-card)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {error}
-            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}><XIcon /></button>
+            <span>{error}</span>
+            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex' }}><CloseIcon size={16} /></button>
           </div>
         )}
         {success && (
-          <div style={{ background: 'rgba(0,200,100,0.08)', border: '1px solid rgba(0,200,100,0.25)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--color-primary)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {success}
-            <button onClick={() => setSuccess(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}><XIcon /></button>
+          <div style={{ background: 'rgba(0,200,100,0.08)', border: '1px solid rgba(0,200,100,0.25)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--color-primary)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <CheckCircle2 size={16} />
+              <span>{success}</span>
+            </div>
+            <button onClick={() => setSuccess(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex' }}><CloseIcon size={16} /></button>
           </div>
         )}
 
@@ -275,11 +267,12 @@ const AdminPanel = () => {
                       <td style={{ textAlign: 'center' }}>
                         <button
                           className="btn btn-secondary"
-                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
                           onClick={() => handleResetPassword(u.id, u.name)}
                           title="Restablecer contraseña de esta cuenta"
                         >
-                          🔑 Clave
+                          <KeyIcon size={13} />
+                          <span>Clave</span>
                         </button>
                       </td>
                     </tr>

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
 import { generateInvoicePDF } from '../utils/invoiceGenerator';
 import { useAuth } from '../context/AuthContext';
+import { CloseIcon, ReceiptText } from './Icons';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val || 0);
@@ -102,7 +103,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
             <h3 style={{ fontSize: '1.2rem', marginBottom: '0.2rem' }}>Generar Cuenta de Cobro</h3>
             <p className="text-muted" style={{ fontSize: '0.8rem' }}>Documento oficial COARC en PDF para cobros corporativos</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', padding: '0.25rem' }} aria-label="Cerrar"><CloseIcon size={20} /></button>
         </div>
 
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -219,8 +220,9 @@ const InvoiceModal = ({ isOpen, onClose }) => {
 
         <div className="modal-footer">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="button" className="btn btn-primary" onClick={handleGenerate} disabled={selectedMatchIds.length === 0}>
-            📄 Generar PDF Cuenta de Cobro
+          <button type="button" className="btn btn-primary" onClick={handleGenerate} disabled={selectedMatchIds.length === 0} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <ReceiptText size={18} />
+            <span>Generar PDF Cuenta de Cobro</span>
           </button>
         </div>
       </div>
