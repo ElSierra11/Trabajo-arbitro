@@ -115,21 +115,44 @@ const AppContent = () => {
             COARC<span style={{ color: 'var(--color-text)' }}>.</span>
           </span>
         </div>
-        <button
-          onClick={() => setIsDark(!isDark)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--color-text-muted)',
-            cursor: 'pointer',
-            padding: '0.4rem',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-          aria-label="Cambiar tema"
-        >
-          {isDark ? <SunIcon size={20} /> : <MoonIcon size={20} />}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            onClick={logout}
+            style={{
+              background: 'rgba(255, 42, 95, 0.1)',
+              border: '1px solid rgba(255, 42, 95, 0.25)',
+              color: 'var(--color-red-card)',
+              padding: '0.35rem 0.65rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.75rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+            title="Cerrar Sesión"
+            aria-label="Cerrar Sesión"
+          >
+            <LogoutIcon size={14} />
+            <span>Cerrar Sesión</span>
+          </button>
+          <button
+            onClick={() => setIsDark(!isDark)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-text-muted)',
+              cursor: 'pointer',
+              padding: '0.4rem',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            aria-label="Cambiar tema"
+          >
+            {isDark ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar Overlay (Mobile) */}
@@ -190,12 +213,33 @@ const AppContent = () => {
           )}
 
           {/* Profile info */}
-          <div className="sidebar-profile-card">
-            <div className="profile-avatar">{(user?.name || activeProfile.name).charAt(0).toUpperCase()}</div>
-            <div className="profile-info">
-              <div className="profile-name">{user?.name || activeProfile.name}</div>
-              <div className="profile-role" style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.email || 'Árbitro'}</div>
+          <div className="sidebar-profile-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+              <div className="profile-avatar">{(user?.name || activeProfile.name).charAt(0).toUpperCase()}</div>
+              <div className="profile-info">
+                <div className="profile-name">{user?.name || activeProfile.name}</div>
+                <div className="profile-role" style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.email || 'Árbitro'}</div>
+              </div>
             </div>
+            <button
+              onClick={logout}
+              style={{
+                background: 'rgba(255, 42, 95, 0.1)',
+                border: '1px solid rgba(255, 42, 95, 0.25)',
+                color: 'var(--color-red-card)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.4rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+              title="Cerrar Sesión"
+              aria-label="Cerrar Sesión"
+            >
+              <LogoutIcon size={16} />
+            </button>
           </div>
 
           {/* Logout */}
@@ -224,9 +268,34 @@ const AppContent = () => {
           <div className="flex-between" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               <h1 style={{ marginBottom: '0.2rem' }}>{getTabTitle()}</h1>
-              <p className="text-muted" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                COARC • {user?.name || activeProfile.name}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                <span className="text-muted" style={{ fontSize: '0.85rem' }}>
+                  COARC • <strong style={{ color: 'var(--color-text)', fontWeight: '700' }}>{user?.name || activeProfile.name}</strong>
+                </span>
+                <button
+                  onClick={logout}
+                  style={{
+                    background: 'rgba(255, 42, 95, 0.1)',
+                    border: '1px solid rgba(255, 42, 95, 0.3)',
+                    color: 'var(--color-red-card)',
+                    padding: '0.2rem 0.65rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.72rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 42, 95, 0.2)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 42, 95, 0.1)')}
+                  title="Cerrar sesión de la cuenta"
+                >
+                  <LogoutIcon size={13} />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
             </div>
 
             {/* Desktop Action Buttons (hidden on mobile to prevent redundancy with FAB and Bottom Nav) */}

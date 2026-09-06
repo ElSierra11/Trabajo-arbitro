@@ -12,16 +12,18 @@
   justify-content: space-between;
   z-index: 100;
   transition: transform var(--transition-normal);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-brand {
-  padding: 2rem 1.5rem;
+  padding: 1.25rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .brand-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--color-text);
   display: flex;
