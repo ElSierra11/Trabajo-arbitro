@@ -32,7 +32,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 
 const AppContent = () => {
-  const { activeProfile } = useRefContext();
+  const { activeProfile, error, reload } = useRefContext();
   const { user, logout, isAdmin } = useAuth();
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -320,6 +320,33 @@ const AppContent = () => {
               </div>
             )}
           </div>
+
+          {error && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#f87171',
+              padding: '0.75rem 1.25rem',
+              borderRadius: 'var(--radius-md, 8px)',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              fontSize: '0.85rem'
+            }}>
+              <div>
+                <strong>Aviso de sincronización:</strong> {error}
+              </div>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => reload()} 
+                style={{ fontSize: '0.75rem', padding: '0.35rem 0.8rem', borderColor: 'rgba(239, 68, 68, 0.5)', color: '#f87171' }}
+              >
+                Reintentar Cargar
+              </button>
+            </div>
+          )}
 
           {renderTabContent()}
         </div>

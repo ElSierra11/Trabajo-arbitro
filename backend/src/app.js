@@ -742,14 +742,81 @@ app.post('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
 });
 
 // ==========================================
+// 7. DIAGNOSTIC & DATA INTEGRITY ENDPOINTS
+// ==========================================
+app.get('/api/debug/db', async (req, res) => {
+  try {
+    const [tables] = await sequelize.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public';
+    `);
+
+    let matchesCount = null;
+    let matchesLowerCount = null;
+    let usersCount = null;
+    let sampleMatches = [];
+
+    try {
+      const [r] = await sequelize.query('SELECT COUNT(*)::int AS count FROM "Matches";');
+      matchesCount = r[0]?.count;
+    } catch (e) { matchesCount = 'error: ' + e.message; }
+
+    try {
+      const [r] = await sequelize.query('SELECT COUNT(*)::int AS count FROM matches;');
+      matchesLowerCount = r[0]?.count;
+    } catch (e) { matchesLowerCount = 'error: ' + e.message; }
+
+    try {
+      const [r] = await sequelize.query('SELECT COUNT(*)::int AS count FROM "Users";');
+      usersCount = r[0]?.count;
+    } catch (e) { usersCount = 'error: ' + e.message; }
+
+    try {
+      const [rows] = await sequelize.query('SELECT id, date, "homeTeam", "awayTeam", fee FROM "Matches" LIMIT 5;');
+      sampleMatches = rows;
+    } catch (_) {
+      try {
+        const [rows] = await sequelize.query('SELECT id, date, "homeTeam", "awayTeam", fee FROM matches LIMIT 5;');
+        sampleMatches = rows;
+      } catch (_) {}
+    }
+
+    res.json({
+      status: 'ok',
+      tables: tables.map(t => t.table_name),
+      counts: {
+        'Matches (capital M)': matchesCount,
+        'matches (lowercase)': matchesLowerCount,
+        'Users': usersCount,
+      },
+      sampleMatches,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
 // SERVER START
 // ==========================================
 const startServer = async () => {
   try {
     await connectDB();
-    // alter:true keeps existing data while adding new columns and indexes safely
-    await sequelize.sync({ alter: true });
-    console.log('✅ Tablas e índices de la base de datos sincronizados.');
+    
+    // Safely sync without killing server process if alter has PostgreSQL conflicts
+    try {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Tablas e índices de la base de datos sincronizados con alter.');
+    } catch (alterErr) {
+      console.warn('⚠️ Advertencia en sync({ alter }):', alterErr.message);
+      try {
+        await sequelize.sync();
+        console.log('✅ Tablas de la base de datos sincronizadas en modo seguro.');
+      } catch (safeErr) {
+        console.warn('⚠️ Advertencia en sync seguro:', safeErr.message);
+      }
+    }
 
     // Migration safety: copy any rows from lowercase 'matches' back into '"Matches"' and vice versa
     try {

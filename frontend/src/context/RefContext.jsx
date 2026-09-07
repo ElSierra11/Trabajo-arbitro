@@ -31,13 +31,23 @@ export const RefProvider = ({ children }) => {
       const headers = getAuthHeaders();
       // Fetch profiles
       const profRes = await fetch(`${API_URL}/profiles`, { headers });
-      if (!profRes.ok) throw new Error('Error al cargar perfiles del servidor');
+      if (profRes.status === 401 || profRes.status === 403) {
+        setError('Tu sesión expiró. Por favor haz clic en "Cerrar Sesión" e ingresa nuevamente.');
+        setLoading(false);
+        return;
+      }
+      if (!profRes.ok) throw new Error(`Error en servidor al cargar perfiles (${profRes.status})`);
       const profData = await profRes.json();
       setProfiles(profData);
 
       // Fetch matches
       const matchRes = await fetch(`${API_URL}/matches`, { headers });
-      if (!matchRes.ok) throw new Error('Error al cargar partidos del servidor');
+      if (matchRes.status === 401 || matchRes.status === 403) {
+        setError('Tu sesión expiró. Por favor haz clic en "Cerrar Sesión" e ingresa nuevamente.');
+        setLoading(false);
+        return;
+      }
+      if (!matchRes.ok) throw new Error(`Error en servidor al cargar partidos (${matchRes.status})`);
       const matchData = await matchRes.json();
       console.log('Partidos cargados desde API:', matchData?.length);
       
@@ -82,7 +92,7 @@ export const RefProvider = ({ children }) => {
           if (Array.isArray(parsed) && parsed.length > 0) setMatches(parsed);
         }
       } catch (_) {}
-      setError('No se pudo conectar al servidor. Los datos podrían no estar sincronizados.');
+      setError(err.message || 'No se pudo conectar con el servidor.');
     } finally {
       setLoading(false);
     }
