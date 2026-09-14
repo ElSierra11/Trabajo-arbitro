@@ -13,10 +13,12 @@ import {
   CheckCircle2,
   Clock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  PaperclipIcon,
 } from './Icons';
 import { generateMatchPDF } from '../utils/pdfGenerator';
 import { exportMatchesToPDF, exportMatchesToExcel } from '../utils/exportUtils';
+import ReportUploadModal from './ReportUploadModal';
 
 // Format currency helper
 const formatCurrency = (val) => {
@@ -56,6 +58,8 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
   
   // Collapse/Expand state for match details
   const [expandedMatchId, setExpandedMatchId] = useState(null);
+  // Report upload modal
+  const [reportModalMatch, setReportModalMatch] = useState(null);
 
   // Extract all unique months from match dates for the dropdown filter
   const uniqueMonths = useMemo(() => {
@@ -369,6 +373,26 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                             >
                               <DownloadIcon size={14} />
                             </button>
+                            <button
+                              className="btn-icon-only"
+                              onClick={() => setReportModalMatch(match)}
+                              title="Planillas del partido"
+                              style={{ color: 'var(--color-accent)', borderColor: 'rgba(255,200,0,0.15)', position: 'relative' }}
+                            >
+                              <PaperclipIcon size={14} />
+                              {Array.isArray(match.reportFiles) && match.reportFiles.length > 0 && (
+                                <span style={{
+                                  position: 'absolute', top: '-5px', right: '-5px',
+                                  background: 'var(--color-primary)', color: '#000',
+                                  borderRadius: '50%', fontSize: '9px', fontWeight: '800',
+                                  width: '14px', height: '14px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  lineHeight: 1,
+                                }}>
+                                  {match.reportFiles.length}
+                                </span>
+                              )}
+                            </button>
                             <button className="btn-icon-only" onClick={() => onEditMatch(match)} title="Editar partido">
                               <EditIcon size={14} />
                             </button>
@@ -679,6 +703,39 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                         <DownloadIcon size={18} />
                       </button>
 
+                      {/* Planillas Button (mobile) */}
+                      <button
+                        onClick={() => setReportModalMatch(match)}
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: 'var(--radius-sm)',
+                          backgroundColor: 'rgba(255,200,0,0.07)',
+                          border: '1px solid rgba(255,200,0,0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--color-accent)',
+                          cursor: 'pointer',
+                          position: 'relative',
+                        }}
+                        aria-label="Ver planillas del partido"
+                        title="Planillas"
+                      >
+                        <PaperclipIcon size={18} />
+                        {Array.isArray(match.reportFiles) && match.reportFiles.length > 0 && (
+                          <span style={{
+                            position: 'absolute', top: '6px', right: '6px',
+                            background: 'var(--color-primary)', color: '#000',
+                            borderRadius: '50%', fontSize: '9px', fontWeight: '800',
+                            width: '14px', height: '14px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            {match.reportFiles.length}
+                          </span>
+                        )}
+                      </button>
+
                       <button
                         onClick={() => onEditMatch(match)}
                         style={{
@@ -760,6 +817,17 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
           }
         }
       `}</style>
+
+      {/* Report Upload Modal */}
+      {reportModalMatch && (
+        <ReportUploadModal
+          match={reportModalMatch}
+          onClose={() => setReportModalMatch(null)}
+          onFilesChanged={() => {
+            // The modal manages its own state; on close the user will see updated badges on next load
+          }}
+        />
+      )}
     </div>
   );
 };

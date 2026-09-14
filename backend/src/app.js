@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
+import multer from 'multer';
 import sequelize, { connectDB } from './config/db.js';
 import User from './models/User.js';
 import Profile from './models/Profile.js';
@@ -561,6 +562,101 @@ app.delete('/api/matches/:id', verifyToken, async (req, res) => {
     }
     await match.destroy();
     res.json({ message: 'Partido eliminado correctamente.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 4b. MATCH REPORT FILES (Planillas oficiales)
+// ==========================================
+
+// Multer: memory storage, max 5MB per file
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no soportado. Solo JPG, PNG, WebP y PDF.'));
+    }
+  },
+});
+
+// Upload a report file for a match
+app.post('/api/matches/:id/reports', verifyToken, upload.single('file'), async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+    if (match.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Sin permiso para modificar este partido.' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+
+    const existing = Array.isArray(match.reportFiles) ? match.reportFiles : [];
+    if (existing.length >= 10) {
+      return res.status(400).json({ error: 'Máximo 10 archivos por partido.' });
+    }
+
+    const base64 = req.file.buffer.toString('base64');
+    const newFile = {
+      id: `rf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: req.file.originalname,
+      type: req.file.mimetype,
+      size: req.file.size,
+      data: base64,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    const updatedFiles = [...existing, newFile];
+    await match.update({ reportFiles: updatedFiles });
+
+    // Return without the base64 data to keep response small
+    const { data: _d, ...fileMeta } = newFile;
+    res.status(201).json({ file: fileMeta, totalFiles: updatedFiles.length });
+  } catch (err) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'El archivo supera el límite de 5 MB.' });
+    }
+    console.error('Error subiendo planilla:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get report files for a match (returns base64 data)
+app.get('/api/matches/:id/reports', verifyToken, async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+    if (match.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Sin permiso.' });
+    }
+    const files = Array.isArray(match.reportFiles) ? match.reportFiles : [];
+    res.json(files);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a report file from a match
+app.delete('/api/matches/:id/reports/:fileId', verifyToken, async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+    if (match.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Sin permiso para modificar este partido.' });
+    }
+
+    const existing = Array.isArray(match.reportFiles) ? match.reportFiles : [];
+    const updated = existing.filter(f => f.id !== req.params.fileId);
+    if (updated.length === existing.length) {
+      return res.status(404).json({ error: 'Archivo no encontrado.' });
+    }
+
+    await match.update({ reportFiles: updated });
+    res.json({ message: 'Archivo eliminado.', totalFiles: updated.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

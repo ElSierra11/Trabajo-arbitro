@@ -35,6 +35,8 @@ import {
   MoreVertical,
   SlidersHorizontal,
   RefreshCw,
+  Paperclip,
+  FileImage,
 } from 'lucide-react';
 
 // ==========================================
@@ -64,6 +66,8 @@ export {
   MoreVertical,
   SlidersHorizontal,
   RefreshCw,
+  Paperclip,
+  FileImage,
 };
 
 // Aliases with consistent sizing defaults
@@ -213,3 +217,5 @@ export const RedCardIcon = ({ size = 18, className = '' }) => (
 export const StatsIcon = ({ size = 20, className = '' }) => <History size={size} className={className} />;
 export const ProfilesIcon = ({ size = 20, className = '' }) => <UserLucide size={size} className={className} />;
 export const IncidentIcon = ({ size = 20, className = '' }) => <AlertCircle size={size} className={className} />;
+export const PaperclipIcon = ({ size = 20, className = '', style = {} }) => <Paperclip size={size} className={className} style={style} />;
+export const FileImageIcon = ({ size = 20, className = '', style = {} }) => <FileImage size={size} className={className} style={style} />;

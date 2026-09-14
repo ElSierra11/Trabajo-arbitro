@@ -90,6 +90,10 @@ const Match = sequelize.define('Match', {
     type: DataTypes.JSONB, // Stores list of { id, player, type: 'amarilla'|'roja', minute, reason }
     defaultValue: [],
   },
+  reportFiles: {
+    type: DataTypes.JSONB, // Stores list of { id, name, type, size, data (base64), uploadedAt }
+    defaultValue: [],
+  },
 }, {
   timestamps: true,
   tableName: 'Matches',
