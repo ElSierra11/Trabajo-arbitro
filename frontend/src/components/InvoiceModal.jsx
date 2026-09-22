@@ -22,9 +22,21 @@ const InvoiceModal = ({ isOpen, onClose }) => {
   const [accountNumber, setAccountNumber] = useState('');
   const [selectedMatchIds, setSelectedMatchIds] = useState([]);
 
-  // Fetch consecutive invoice number from backend when modal opens
+  // Fetch consecutive invoice number & load saved bank info when modal opens
   useEffect(() => {
     if (!isOpen) return;
+
+    // Auto-fill saved bank info for current referee
+    try {
+      const savedBank = localStorage.getItem(`coarc_bank_info_${user?.id}`);
+      if (savedBank) {
+        const parsed = JSON.parse(savedBank);
+        if (parsed.bank) setBank(parsed.bank);
+        if (parsed.accountType) setAccountType(parsed.accountType);
+        if (parsed.accountNumber) setAccountNumber(parsed.accountNumber);
+      }
+    } catch (_) {}
+
     const fetchInvoiceNumber = async () => {
       try {
         const token = localStorage.getItem('coarc_token');
@@ -45,7 +57,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       }
     };
     fetchInvoiceNumber();
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   // Pending matches available for invoicing
   const pendingMatches = useMemo(() => {
@@ -114,6 +126,17 @@ const InvoiceModal = ({ isOpen, onClose }) => {
         refNumber: user?.refNumber || 'COARC-01'
       }
     });
+
+    // Remember bank info for future invoices
+    if (user?.id) {
+      try {
+        localStorage.setItem(`coarc_bank_info_${user.id}`, JSON.stringify({
+          bank: bank.trim(),
+          accountType,
+          accountNumber: accountNumber.trim(),
+        }));
+      } catch (_) {}
+    }
 
     onClose();
   };

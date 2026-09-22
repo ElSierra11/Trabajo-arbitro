@@ -117,8 +117,13 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUserData = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('coarc_user', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, authError, login, register, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, token, loading, authError, login, register, logout, updateUserData, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   );

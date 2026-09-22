@@ -55,6 +55,7 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [roleFilter, setRoleFilter] = useState('Todos');
   const [monthFilter, setMonthFilter] = useState('Todos');
+  const [tournamentFilter, setTournamentFilter] = useState('Todos');
   
   // Collapse/Expand state for match details
   const [expandedMatchId, setExpandedMatchId] = useState(null);
@@ -70,6 +71,17 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
       months.add(monthKey);
     });
     return Array.from(months).sort().reverse();
+  }, [matches]);
+
+  // Extract all unique tournaments for the dropdown filter
+  const uniqueTournaments = useMemo(() => {
+    const set = new Set();
+    matches.forEach(m => {
+      if (m.tournament && m.tournament.trim()) {
+        set.add(m.tournament.trim());
+      }
+    });
+    return Array.from(set).sort();
   }, [matches]);
 
   // Filtered Matches
@@ -89,9 +101,12 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
       // 4. Month Filter
       const matchesMonth = monthFilter === 'Todos' || (m.date && m.date.startsWith(monthFilter));
 
-      return matchesSearch && matchesStatus && matchesRole && matchesMonth;
+      // 5. Tournament Filter
+      const matchesTournament = tournamentFilter === 'Todos' || (m.tournament && m.tournament.trim() === tournamentFilter);
+
+      return matchesSearch && matchesStatus && matchesRole && matchesMonth && matchesTournament;
     });
-  }, [matches, search, statusFilter, roleFilter, monthFilter]);
+  }, [matches, search, statusFilter, roleFilter, monthFilter, tournamentFilter]);
 
   // Totals for filtered matches
   const filteredTotals = useMemo(() => {
@@ -208,6 +223,22 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                 <option key={m} value={m}>
                   {getMonthLabel(m)}
                 </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tournament Filter */}
+          <div>
+            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Torneo / Liga</label>
+            <select 
+              className="form-control" 
+              style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+              value={tournamentFilter}
+              onChange={(e) => setTournamentFilter(e.target.value)}
+            >
+              <option value="Todos">Todos los Torneos ({uniqueTournaments.length})</option>
+              {uniqueTournaments.map(t => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>

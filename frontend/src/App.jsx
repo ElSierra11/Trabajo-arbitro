@@ -17,6 +17,7 @@ import {
   MoonIcon,
   ReceiptText,
   UserIcon,
+  EditIcon,
 } from './components/Icons';
 
 import Dashboard from './components/Dashboard';
@@ -28,6 +29,7 @@ import LoginPage from './components/LoginPage';
 import AdminPanel from './components/AdminPanel';
 import CalendarView from './components/CalendarView';
 import InvoiceModal from './components/InvoiceModal';
+import UserProfileModal from './components/UserProfileModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 
@@ -38,6 +40,7 @@ const AppContent = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('coarc_theme');
@@ -198,7 +201,12 @@ const AppContent = () => {
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
           {/* Profile Card */}
-          <div className="sidebar-profile-card">
+          <div
+            className="sidebar-profile-card"
+            onClick={() => setIsProfileModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+            title="Haz clic para editar tu perfil, tarifas y datos de cobro"
+          >
             <div className="profile-avatar">
               {(user?.name || activeProfile?.name || 'A').charAt(0).toUpperCase()}
             </div>
@@ -215,6 +223,29 @@ const AppContent = () => {
                 {user?.email || 'Árbitro'}
               </span>
             </div>
+            <button
+              type="button"
+              className="btn-icon-only"
+              onClick={(e) => { e.stopPropagation(); setIsProfileModalOpen(true); }}
+              title="Ajustes de mi perfil"
+              style={{
+                width: '28px',
+                height: '28px',
+                minWidth: '28px',
+                padding: 0,
+                border: 'none',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 'var(--radius-sm)',
+                flexShrink: 0,
+              }}
+            >
+              <EditIcon size={14} />
+            </button>
           </div>
 
           {/* Actions: Theme & Logout */}
@@ -391,6 +422,10 @@ const AppContent = () => {
       <InvoiceModal
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}
+      />
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
     </div>
   );

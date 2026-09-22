@@ -192,6 +192,42 @@ app.get('/api/auth/me', verifyToken, async (req, res) => {
   }
 });
 
+// Update current user info (name, refNumber)
+app.put('/api/auth/profile', verifyToken, async (req, res) => {
+  try {
+    const { name, refNumber } = req.body;
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    if (name && name.trim()) {
+      user.name = sanitizeName(name.trim());
+    }
+    if (refNumber !== undefined) {
+      user.refNumber = sanitizeName(refNumber.trim());
+    }
+    await user.save();
+
+    // Also update user's profile records in Profile table
+    await Profile.update(
+      { 
+        name: user.name, 
+        refNumber: user.refNumber 
+      },
+      { where: { userId: user.id } }
+    );
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      refNumber: user.refNumber
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Change Password (for logged in user)
 app.post('/api/auth/change-password', verifyToken, async (req, res) => {
   try {
