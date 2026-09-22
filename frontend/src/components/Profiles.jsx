@@ -86,7 +86,7 @@ const Profiles = () => {
     <div className="grid-cols-3">
       
       {/* Profiles list management (Span 2 columns) */}
-      <section className="card" style={{ gridColumn: window.innerWidth > 768 ? 'span 2' : 'span 1', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <section className="card" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="flex-between">
           <h3 style={{ fontSize: '1.2rem' }}>Colegas y Perfiles de Árbitros</h3>
           {!isAdding && (

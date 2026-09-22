@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRefContext } from '../context/RefContext';
 import { generateInvoicePDF } from '../utils/invoiceGenerator';
 import { useAuth } from '../context/AuthContext';
 import { CloseIcon, ReceiptText } from './Icons';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val || 0);
@@ -12,13 +14,38 @@ const InvoiceModal = ({ isOpen, onClose }) => {
   const { user } = useAuth();
 
   const [selectedTournament, setSelectedTournament] = useState('Todos');
-  const [invoiceNumber, setInvoiceNumber] = useState(`CC-${Math.floor(100 + Math.random() * 900)}`);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientNit, setClientNit] = useState('');
   const [bank, setBank] = useState('Bancolombia');
   const [accountType, setAccountType] = useState('Ahorros');
   const [accountNumber, setAccountNumber] = useState('');
   const [selectedMatchIds, setSelectedMatchIds] = useState([]);
+
+  // Fetch consecutive invoice number from backend when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchInvoiceNumber = async () => {
+      try {
+        const token = localStorage.getItem('coarc_token');
+        const res = await fetch(`${API_URL}/invoices/next-number`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ year: new Date().getFullYear() }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setInvoiceNumber(data.invoiceNumber);
+        } else {
+          // Fallback to local format if API fails
+          setInvoiceNumber(`CC-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900))}`);
+        }
+      } catch (_) {
+        setInvoiceNumber(`CC-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900))}`);
+      }
+    };
+    fetchInvoiceNumber();
+  }, [isOpen]);
 
   // Pending matches available for invoicing
   const pendingMatches = useMemo(() => {

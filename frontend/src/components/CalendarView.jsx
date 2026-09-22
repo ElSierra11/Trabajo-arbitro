@@ -12,7 +12,7 @@ const MONTH_NAMES = [
 ];
 
 const CalendarView = ({ onAddMatch, onEditMatch }) => {
-  const { matches } = useRefContext();
+  const { activeMatches } = useRefContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayMatches, setSelectedDayMatches] = useState(null);
   const [selectedDateStr, setSelectedDateStr] = useState('');
@@ -59,23 +59,22 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
   // Group matches by YYYY-MM-DD
   const matchesByDate = useMemo(() => {
     const map = {};
-    matches.forEach(m => {
+    activeMatches.forEach(m => {
       if (!m.date) return;
       if (!map[m.date]) map[m.date] = [];
       map[m.date].push(m);
     });
     return map;
-  }, [matches]);
+  }, [activeMatches]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const handleDayClick = (cell, dayMatches) => {
     if (!cell.isCurrentMonth || !cell.dateStr) return;
     if (window.innerWidth < 768) {
-      if (dayMatches.length > 0) {
-        setSelectedDayMatches(dayMatches);
-        setSelectedDateStr(cell.dateStr);
-      }
+      // On mobile, open the bottom sheet for any day (to add or see matches)
+      setSelectedDayMatches(dayMatches);
+      setSelectedDateStr(cell.dateStr);
     }
   };
 
@@ -156,7 +155,7 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                   flexDirection: 'column',
                   gap: '0.2rem',
                   opacity: cell.isCurrentMonth ? 1 : 0.45,
-                  cursor: cell.isCurrentMonth && hasMatches ? 'pointer' : 'default',
+                  cursor: cell.isCurrentMonth ? 'pointer' : 'default',
                   transition: 'background-color 0.15s',
                 }}
               >

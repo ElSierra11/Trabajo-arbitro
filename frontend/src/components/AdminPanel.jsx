@@ -138,7 +138,7 @@ const AdminPanel = () => {
           <div className="card-header-accent" style={{ background: 'var(--color-success)' }} />
           <span className="metric-title">Crear Nuevo Árbitro</span>
           <div style={{ marginTop: '0.5rem' }}>
-            <PlusCircleIcon size={36} />
+            <PlusCircle size={36} />
           </div>
           <div className="metric-trend" style={{ color: 'var(--color-primary)' }}>Haz clic para crear</div>
         </div>

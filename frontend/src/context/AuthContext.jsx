@@ -100,9 +100,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear user-specific match cache and profile preference before removing token
+    try {
+      const token = localStorage.getItem('coarc_token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.id || 'anonymous';
+        localStorage.removeItem(`coarc_cached_matches_${userId}`);
+        localStorage.removeItem(`coarc_active_profile_id_${userId}`);
+      }
+    } catch (_) {}
     localStorage.removeItem('coarc_token');
     localStorage.removeItem('coarc_user');
-    localStorage.removeItem('coarc_active_profile_id');
+    localStorage.removeItem('coarc_active_profile_id'); // legacy key cleanup
     setToken(null);
     setUser(null);
   };

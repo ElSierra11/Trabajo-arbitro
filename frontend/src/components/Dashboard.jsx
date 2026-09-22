@@ -130,7 +130,7 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
       <div className="grid-cols-3">
         
         {/* Recent Matches */}
-        <section className="card" style={{ gridColumn: window.innerWidth > 768 ? 'span 2' : 'span 1' }}>
+        <section className="card" style={{ gridColumn: 'span 2' }}>
           <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ fontSize: '1.2rem' }}>Partidos Recientes</h3>
             {matches.length > 0 && (

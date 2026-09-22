@@ -17,6 +17,20 @@ const getAuthHeaders = () => ({
   'Authorization': `Bearer ${localStorage.getItem('coarc_token') || ''}`
 });
 
+// Helper: get current user ID from stored JWT payload (to scope cache per user)
+const getCurrentUserId = () => {
+  try {
+    const token = localStorage.getItem('coarc_token');
+    if (!token) return 'anonymous';
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.id || 'anonymous';
+  } catch (_) {
+    return 'anonymous';
+  }
+};
+
+const getCacheKey = () => `coarc_cached_matches_${getCurrentUserId()}`;
+
 export const RefProvider = ({ children }) => {
   const [profiles, setProfiles] = useState([DEFAULT_PROFILE]);
   const [activeProfileId, setActiveProfileId] = useState(DEFAULT_PROFILE.id);
@@ -53,29 +67,15 @@ export const RefProvider = ({ children }) => {
       
       if (Array.isArray(matchData) && matchData.length > 0) {
         setMatches(matchData);
-        try { localStorage.setItem('coarc_cached_matches', JSON.stringify(matchData)); } catch (_) {}
+        try { localStorage.setItem(getCacheKey(), JSON.stringify(matchData)); } catch (_) {}
       } else {
-        // Fail-safe: check if there are matches in local storage cache
-        try {
-          const cached = localStorage.getItem('coarc_cached_matches');
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              console.log('Restaurando partidos desde caché local:', parsed.length);
-              setMatches(parsed);
-            } else {
-              setMatches([]);
-            }
-          } else {
-            setMatches([]);
-          }
-        } catch (_) {
-          setMatches([]);
-        }
+        // API returned empty array — user simply has no matches yet. Don't restore another user's cache.
+        setMatches([]);
       }
 
       // Determine active profile from local preferences or fallback to first
-      const savedActiveId = localStorage.getItem('coarc_active_profile_id');
+      const userProfileKey = `coarc_active_profile_id_${getCurrentUserId()}`;
+      const savedActiveId = localStorage.getItem(userProfileKey);
       if (savedActiveId && profData.some(p => p.id === savedActiveId)) {
         setActiveProfileId(savedActiveId);
       } else if (profData.length > 0) {
@@ -85,8 +85,9 @@ export const RefProvider = ({ children }) => {
       setError(null);
     } catch (err) {
       console.error('API connection error:', err);
+      // On connection error, try to restore THIS user's own cache only
       try {
-        const cached = localStorage.getItem('coarc_cached_matches');
+        const cached = localStorage.getItem(getCacheKey());
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) setMatches(parsed);
@@ -102,10 +103,11 @@ export const RefProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  // Save active profile ID locally as preference
+  // Save active profile ID locally as preference, scoped per-user
   const handleSetActiveProfile = (id) => {
     setActiveProfileId(id);
-    localStorage.setItem('coarc_active_profile_id', id);
+    const userKey = `coarc_active_profile_id_${getCurrentUserId()}`;
+    localStorage.setItem(userKey, id);
   };
 
   // 2. Profile API Actions
@@ -272,14 +274,17 @@ export const RefProvider = ({ children }) => {
         return { success: false, error: 'Formato de archivo inválido.' };
       }
 
-      // Sync with backend API
+      // Sync with backend API — Auth header is REQUIRED for this endpoint
       const res = await fetch(`${API_URL}/import`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: jsonData
       });
 
-      if (!res.ok) throw new Error('Error de importación del servidor');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error de importación del servidor');
+      }
       
       // Reload everything
       await fetchData();
@@ -295,8 +300,8 @@ export const RefProvider = ({ children }) => {
   const activeMatches = useMemo(() => {
     if (!matches || matches.length === 0) return [];
     if (profiles.length <= 1) return matches;
-    const filtered = matches.filter(m => !m.profileId || m.profileId === activeProfileId);
-    return filtered.length > 0 ? filtered : matches;
+    // Filter strictly by active profile — no fallback that could mix profiles
+    return matches.filter(m => !m.profileId || m.profileId === activeProfileId);
   }, [matches, activeProfileId, profiles]);
 
   // Statistics calculations helper

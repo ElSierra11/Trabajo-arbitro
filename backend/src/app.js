@@ -273,11 +273,25 @@ app.post('/api/tournaments', verifyToken, async (req, res) => {
   }
 });
 
-// Get teams (optionally filtered by tournamentId)
+// Get teams (filtered by current user's tournaments only)
 app.get('/api/teams', verifyToken, async (req, res) => {
   try {
     const where = {};
-    if (req.query.tournamentId) where.tournamentId = req.query.tournamentId;
+    if (req.query.tournamentId) {
+      // Verify the tournament belongs to this user before listing its teams
+      const tournament = await Tournament.findOne({
+        where: { id: req.query.tournamentId, userId: req.user.id }
+      });
+      if (!tournament) return res.json([]); // tournament not found or not theirs
+      where.tournamentId = req.query.tournamentId;
+    } else {
+      // Without tournamentId filter, only show teams from user's own tournaments
+      const userTournaments = await Tournament.findAll({
+        where: { userId: req.user.id },
+        attributes: ['id']
+      });
+      where.tournamentId = userTournaments.map(t => t.id);
+    }
     const list = await Team.findAll({ where, order: [['name', 'ASC']] });
     res.json(list);
   } catch (err) {
@@ -292,7 +306,8 @@ app.get('/api/teams', verifyToken, async (req, res) => {
 // Get profiles for current user (admin gets all)
 app.get('/api/profiles', verifyToken, async (req, res) => {
   try {
-    const where = req.user.role === 'admin' ? {} : { userId: req.user.id };
+    // Each user (including admin) sees only their own profiles from the main app
+    const where = { userId: req.user.id };
     let list = await Profile.findAll({ where });
 
     // Auto-create default profile if user has none
@@ -388,55 +403,18 @@ const resolveTournamentId = async (userId, tournamentName) => {
   }
 };
 
-// Get matches for current user
+// Get matches for current user only
 app.get('/api/matches', verifyToken, async (req, res) => {
   try {
-    const { Op } = await import('sequelize');
-    const where = req.user.role === 'admin' 
-      ? {} 
-      : { 
-          [Op.or]: [
-            { userId: req.user.id },
-            { userId: null },
-          ]
-        };
-    let list = await Match.findAll({
+    // Admin gets all matches; regular users only get their own
+    const where = req.user.role === 'admin' ? {} : { userId: req.user.id };
+    const list = await Match.findAll({
       where,
       order: [['date', 'DESC'], ['time', 'DESC']]
     });
-
-    // FAIL-SAFE: If Sequelize returns empty, query both tables directly to guarantee existing matches appear
-    if (!list || list.length === 0) {
-      console.log('Match.findAll returned empty, running fail-safe raw queries...');
-      try {
-        const [rows1] = await sequelize.query(`SELECT * FROM "Matches" ORDER BY "date" DESC`);
-        if (rows1 && rows1.length > 0) {
-          list = rows1;
-        }
-      } catch (_) {}
-
-      if (!list || list.length === 0) {
-        try {
-          const [rows2] = await sequelize.query(`SELECT * FROM matches ORDER BY "date" DESC`);
-          if (rows2 && rows2.length > 0) {
-            list = rows2;
-          }
-        } catch (_) {}
-      }
-    }
-
     res.json(list || []);
   } catch (err) {
     console.error('Error fetching matches:', err);
-    // Direct raw fallback on any error
-    try {
-      const [rows] = await sequelize.query(`SELECT * FROM "Matches" ORDER BY "date" DESC`);
-      if (rows && rows.length > 0) return res.json(rows);
-    } catch (_) {}
-    try {
-      const [rows] = await sequelize.query(`SELECT * FROM matches ORDER BY "date" DESC`);
-      if (rows && rows.length > 0) return res.json(rows);
-    } catch (_) {}
     res.status(500).json({ error: err.message });
   }
 });
@@ -680,7 +658,7 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
         COALESCE(SUM("redCards"), 0)::int AS "totalRedCards",
         COALESCE(SUM("homeGoals" + "awayGoals"), 0)::int AS "totalGoals"
       FROM "Matches"
-      WHERE ("userId" = :userId OR "userId" IS NULL)
+      WHERE "userId" = :userId
     `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
 
     // 2. Monthly breakdown
@@ -692,7 +670,7 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS paid,
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS pending
       FROM "Matches"
-      WHERE ("userId" = :userId OR "userId" IS NULL) AND "date" IS NOT NULL
+      WHERE "userId" = :userId AND "date" IS NOT NULL
       GROUP BY SUBSTRING("date", 1, 7)
       ORDER BY "monthKey" DESC
     `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
@@ -706,7 +684,7 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN fee ELSE 0 END), 0)::int AS paid,
         COALESCE(SUM(CASE WHEN "paymentStatus" = 'Pendiente' THEN fee ELSE 0 END), 0)::int AS pending
       FROM "Matches"
-      WHERE ("userId" = :userId OR "userId" IS NULL)
+      WHERE "userId" = :userId
       GROUP BY COALESCE(NULLIF(tournament, ''), 'Sin Torneo')
       ORDER BY pending DESC, total DESC
     `, { replacements: { userId }, type: sequelize.QueryTypes.SELECT });
@@ -840,7 +818,8 @@ app.post('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
 // ==========================================
 // 7. DIAGNOSTIC & DATA INTEGRITY ENDPOINTS
 // ==========================================
-app.get('/api/debug/db', async (req, res) => {
+// PROTECTED: Only admins can access the debug endpoint
+app.get('/api/debug/db', verifyToken, requireAdmin, async (req, res) => {
   try {
     const [tables] = await sequelize.query(`
       SELECT table_name 
@@ -849,9 +828,7 @@ app.get('/api/debug/db', async (req, res) => {
     `);
 
     let matchesCount = null;
-    let matchesLowerCount = null;
     let usersCount = null;
-    let sampleMatches = [];
 
     try {
       const [r] = await sequelize.query('SELECT COUNT(*)::int AS count FROM "Matches";');
@@ -859,34 +836,17 @@ app.get('/api/debug/db', async (req, res) => {
     } catch (e) { matchesCount = 'error: ' + e.message; }
 
     try {
-      const [r] = await sequelize.query('SELECT COUNT(*)::int AS count FROM matches;');
-      matchesLowerCount = r[0]?.count;
-    } catch (e) { matchesLowerCount = 'error: ' + e.message; }
-
-    try {
       const [r] = await sequelize.query('SELECT COUNT(*)::int AS count FROM "Users";');
       usersCount = r[0]?.count;
     } catch (e) { usersCount = 'error: ' + e.message; }
-
-    try {
-      const [rows] = await sequelize.query('SELECT id, date, "homeTeam", "awayTeam", fee FROM "Matches" LIMIT 5;');
-      sampleMatches = rows;
-    } catch (_) {
-      try {
-        const [rows] = await sequelize.query('SELECT id, date, "homeTeam", "awayTeam", fee FROM matches LIMIT 5;');
-        sampleMatches = rows;
-      } catch (_) {}
-    }
 
     res.json({
       status: 'ok',
       tables: tables.map(t => t.table_name),
       counts: {
-        'Matches (capital M)': matchesCount,
-        'matches (lowercase)': matchesLowerCount,
+        'Matches': matchesCount,
         'Users': usersCount,
       },
-      sampleMatches,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
