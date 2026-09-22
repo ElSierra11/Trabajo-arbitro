@@ -62,12 +62,19 @@ const AppContent = () => {
     setIsMatchModalOpen(true);
   };
 
+  // Redirect non-admin users if they are on an admin-only tab
+  useEffect(() => {
+    if (!isAdmin && (currentTab === 'profiles' || currentTab === 'admin')) {
+      setCurrentTab('dashboard');
+    }
+  }, [isAdmin, currentTab]);
+
   const navItems = [
     { id: 'dashboard', label: 'Panel de Control', icon: <DashboardIcon size={20} /> },
     { id: 'matches', label: 'Mis Partidos', icon: <WhistleIcon size={20} /> },
     { id: 'calendar', label: 'Calendario', icon: <CalendarIcon size={20} /> },
     { id: 'stats', label: 'Estadísticas e Ingresos', icon: <StatsIcon size={20} /> },
-    { id: 'profiles', label: 'Perfiles', icon: <ProfilesIcon size={20} /> },
+    ...(isAdmin ? [{ id: 'profiles', label: 'Perfiles y Respaldos', icon: <ProfilesIcon size={20} /> }] : []),
     ...(isAdmin ? [{ id: 'admin', label: 'Administración', icon: <ShieldIcon size={20} /> }] : []),
   ];
 
@@ -82,7 +89,7 @@ const AppContent = () => {
       case 'stats':
         return <Stats onOpenInvoiceModal={() => setIsInvoiceModalOpen(true)} />;
       case 'profiles':
-        return <Profiles />;
+        return isAdmin ? <Profiles /> : <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
       case 'admin':
         return isAdmin ? <AdminPanel /> : <Dashboard onNavigate={setCurrentTab} onAddMatch={handleAddNewMatch} onEditMatch={handleEditMatch} />;
       default:
@@ -367,12 +374,12 @@ const AppContent = () => {
         </button>
 
         <button
-          className={`bottom-nav-item ${currentTab === 'profiles' || isSidebarOpen ? 'active' : ''}`}
+          className={`bottom-nav-item ${isSidebarOpen ? 'active' : ''}`}
           onClick={() => toggleSidebar()}
-          aria-label="Menú y Perfiles"
+          aria-label="Abrir Menú"
         >
           <UserIcon size={20} />
-          <span>Perfil / Más</span>
+          <span>Menú</span>
         </button>
       </nav>
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useRefContext } from '../context/RefContext';
+import { useAuth } from '../context/AuthContext';
 import { DownloadIcon, UploadIcon, PlusIcon, TrashIcon, EditIcon } from './Icons';
 
 const Profiles = () => {
+  const { isAdmin } = useAuth();
   const { 
     profiles, 
     activeProfileId, 
@@ -13,6 +15,15 @@ const Profiles = () => {
     exportData,
     importData
   } = useRefContext();
+
+  if (!isAdmin) {
+    return (
+      <div className="card text-center" style={{ padding: '2.5rem 1rem' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Acceso Restringido</h3>
+        <p className="text-muted">Esta sección de administración de perfiles y respaldos es exclusiva para el administrador.</p>
+      </div>
+    );
+  }
 
   // State for creating a new profile
   const [newName, setNewName] = useState('');
