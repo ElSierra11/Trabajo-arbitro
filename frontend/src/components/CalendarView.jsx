@@ -12,7 +12,8 @@ const MONTH_NAMES = [
 ];
 
 const CalendarView = ({ onAddMatch, onEditMatch }) => {
-  const { activeMatches } = useRefContext();
+  const { matches = [], activeMatches } = useRefContext();
+  const currentMatches = Array.isArray(activeMatches) ? activeMatches : (Array.isArray(matches) ? matches : []);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayMatches, setSelectedDayMatches] = useState(null);
   const [selectedDateStr, setSelectedDateStr] = useState('');
@@ -59,13 +60,13 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
   // Group matches by YYYY-MM-DD
   const matchesByDate = useMemo(() => {
     const map = {};
-    activeMatches.forEach(m => {
-      if (!m.date) return;
+    currentMatches.forEach(m => {
+      if (!m || !m.date) return;
       if (!map[m.date]) map[m.date] = [];
       map[m.date].push(m);
     });
     return map;
-  }, [activeMatches]);
+  }, [currentMatches]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
 

@@ -375,6 +375,7 @@ export const RefProvider = ({ children }) => {
         setActiveProfileId: handleSetActiveProfile,
         activeProfile,
         matches: activeMatches,
+        activeMatches,
         allMatchesRaw: matches,
         loading,
         error,
