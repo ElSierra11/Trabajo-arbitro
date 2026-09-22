@@ -190,75 +190,48 @@ const AppContent = () => {
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          {/* Theme toggle */}
-          <button
-            onClick={() => setIsDark(!isDark)}
-            style={{
-              width: '100%', marginBottom: '0.5rem',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)',
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer',
-            }}
-          >
-            <span>{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
-            {isDark ? <SunIcon size={15} /> : <MoonIcon size={15} />}
-          </button>
-
-          {/* Admin badge */}
-          {isAdmin && (
-            <div style={{ textAlign: 'center', marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.08em', color: 'var(--color-primary)', background: 'rgba(0,200,100,0.08)', border: '1px solid rgba(0,200,100,0.2)', borderRadius: '4px', padding: '0.2rem 0.5rem' }}>
-              ADMINISTRADOR
+          {/* Profile Card */}
+          <div className="sidebar-profile-card">
+            <div className="profile-avatar">
+              {(user?.name || activeProfile?.name || 'A').charAt(0).toUpperCase()}
             </div>
-          )}
-
-          {/* Profile info */}
-          <div className="sidebar-profile-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
-              <div className="profile-avatar">{(user?.name || activeProfile.name).charAt(0).toUpperCase()}</div>
-              <div className="profile-info">
-                <div className="profile-name">{user?.name || activeProfile.name}</div>
-                <div className="profile-role" style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.email || 'Árbitro'}</div>
+            <div className="profile-info">
+              <div className="profile-name-row">
+                <span className="profile-name" title={user?.name || activeProfile?.name || 'Árbitro'}>
+                  {user?.name || activeProfile?.name || 'Árbitro'}
+                </span>
+                {isAdmin && (
+                  <span className="sidebar-admin-pill">ADMIN</span>
+                )}
               </div>
+              <span className="profile-email" title={user?.email || 'Árbitro'}>
+                {user?.email || 'Árbitro'}
+              </span>
             </div>
-            <button
-              onClick={logout}
-              style={{
-                background: 'rgba(255, 42, 95, 0.1)',
-                border: '1px solid rgba(255, 42, 95, 0.25)',
-                color: 'var(--color-red-card)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.4rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0
-              }}
-              title="Cerrar Sesión"
-              aria-label="Cerrar Sesión"
-            >
-              <LogoutIcon size={16} />
-            </button>
           </div>
 
-          {/* Logout */}
-          <button
-            onClick={logout}
-            style={{
-              width: '100%', marginTop: '0.75rem',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              padding: '0.6rem', borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255,42,95,0.06)', border: '1px solid rgba(255,42,95,0.15)',
-              color: 'var(--color-red-card)', fontSize: '0.8rem', fontWeight: '600',
-              cursor: 'pointer', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,42,95,0.12)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,42,95,0.06)'}
-          >
-            <LogoutIcon size={15} />
-            <span>Cerrar Sesión</span>
-          </button>
+          {/* Actions: Theme & Logout */}
+          <div className="sidebar-footer-actions">
+            <button
+              type="button"
+              className="sidebar-action-btn theme-btn"
+              onClick={() => setIsDark(!isDark)}
+              aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              <span>{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>
+              {isDark ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+            </button>
+
+            <button
+              type="button"
+              className="sidebar-action-btn logout-btn"
+              onClick={logout}
+              aria-label="Cerrar Sesión"
+            >
+              <LogoutIcon size={15} />
+              <span>Cerrar Sesión</span>
+            </button>
+          </div>
         </div>
       </aside>
 
