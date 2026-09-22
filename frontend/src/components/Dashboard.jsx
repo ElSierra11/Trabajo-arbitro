@@ -87,6 +87,42 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
         </div>
       )}
 
+      {/* Mobile PWA Install invitation banner */}
+      <div 
+        className="card pwa-dashboard-banner"
+        style={{
+          background: 'linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.1), rgba(0, 240, 255, 0.05))',
+          border: '1px solid rgba(var(--color-primary-rgb), 0.35)',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.85rem 1.15rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+          <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>📲</span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--color-text)' }}>
+              ¿Llevas COARC a los partidos?
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Instala la aplicación en tu celular (Android o iPhone) para registrar partidos rápido, a pantalla completa y sin conexión.
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => window.dispatchEvent(new Event('open-pwa-install-guide'))}
+          style={{ fontSize: '0.8rem', padding: '0.45rem 1rem', whiteSpace: 'nowrap', fontWeight: '800' }}
+        >
+          Cómo Instalar 📲
+        </button>
+      </div>
+
       {/* 4 Metric Cards Grid */}
       <section className="grid-cols-4">
         <div className="card metric-card">

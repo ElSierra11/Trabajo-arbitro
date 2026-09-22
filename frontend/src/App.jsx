@@ -248,8 +248,25 @@ const AppContent = () => {
             </button>
           </div>
 
-          {/* Actions: Theme & Logout */}
+          {/* Actions: Install App, Theme & Logout */}
           <div className="sidebar-footer-actions">
+            <button
+              type="button"
+              className="sidebar-action-btn"
+              onClick={() => window.dispatchEvent(new Event('open-pwa-install-guide'))}
+              title="Instalar COARC como aplicación en tu celular"
+              style={{
+                justifyContent: 'center',
+                gap: '0.45rem',
+                color: 'var(--color-primary)',
+                borderColor: 'rgba(var(--color-primary-rgb), 0.25)',
+                backgroundColor: 'rgba(var(--color-primary-rgb), 0.05)',
+                fontWeight: '700',
+              }}
+            >
+              <span>📲 Instalar en Celular</span>
+            </button>
+
             <button
               type="button"
               className="sidebar-action-btn theme-btn"
