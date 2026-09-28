@@ -267,17 +267,17 @@ const AdminPanel = () => {
             </div>
           ) : (
             <div className="matches-table-container">
-              <table className="matches-table">
+              <table className="matches-table" style={{ width: '100%', minWidth: '980px' }}>
                 <thead>
                   <tr>
-                    <th>Árbitro</th>
-                    <th>Correo</th>
-                    <th>N° Árbitro</th>
-                    <th style={{ textAlign: 'center' }}>Partidos</th>
-                    <th>Ingresos</th>
-                    <th>Rol</th>
-                    <th>Registro</th>
-                    <th style={{ textAlign: 'center' }}>Acciones</th>
+                    <th style={{ minWidth: '180px' }}>Árbitro</th>
+                    <th style={{ minWidth: '220px' }}>Correo</th>
+                    <th style={{ minWidth: '110px' }}>N° Árbitro</th>
+                    <th style={{ minWidth: '90px', textAlign: 'center' }}>Partidos</th>
+                    <th style={{ minWidth: '120px' }}>Ingresos</th>
+                    <th style={{ minWidth: '90px' }}>Rol</th>
+                    <th style={{ minWidth: '100px' }}>Registro</th>
+                    <th style={{ minWidth: '240px', textAlign: 'center' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -296,7 +296,7 @@ const AdminPanel = () => {
                               {u.name?.charAt(0)?.toUpperCase()}
                             </div>
                             <div>
-                              <div style={{ fontWeight: '600' }}>{u.name}</div>
+                              <div style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{u.name}</div>
                               {isSelf && (
                                 <span style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: '700' }}>
                                   (Tu cuenta)
@@ -341,15 +341,15 @@ const AdminPanel = () => {
                             {u.role === 'admin' ? 'ADMIN' : 'ÁRBITRO'}
                           </span>
                         </td>
-                        <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                           {u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-CO') : '—'}
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center' }}>
                             {/* Inspect Matches Button */}
                             <button
                               className="btn btn-secondary"
-                              style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                              style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                               onClick={() => handleInspectMatches(u)}
                               title="Ver partidos de este árbitro"
                             >
@@ -360,7 +360,7 @@ const AdminPanel = () => {
                             {/* Reset Password Button */}
                             <button
                               className="btn btn-secondary"
-                              style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                              style={{ fontSize: '0.75rem', padding: '0.3rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                               onClick={() => handleResetPassword(u.id, u.name)}
                               title="Restablecer contraseña de esta cuenta"
                             >
@@ -370,35 +370,33 @@ const AdminPanel = () => {
 
                             {/* Delete User Button */}
                             {isSelf ? (
-                              <button
-                                className="btn btn-secondary"
+                              <span
                                 style={{
                                   fontSize: '0.75rem',
-                                  padding: '0.25rem 0.5rem',
-                                  opacity: 0.4,
-                                  cursor: 'not-allowed',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem'
+                                  padding: '0.3rem 0.55rem',
+                                  color: 'var(--color-text-muted)',
+                                  background: 'rgba(255,255,255,0.04)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  border: '1px solid var(--color-border)',
                                 }}
-                                disabled
                                 title="No puedes eliminar tu propia cuenta de administrador"
                               >
-                                <TrashIcon size={13} />
-                                <span>Eliminar</span>
-                              </button>
+                                Tú
+                              </span>
                             ) : (
                               <button
-                                className="btn btn-secondary"
+                                className="btn"
                                 style={{
                                   fontSize: '0.75rem',
-                                  padding: '0.25rem 0.5rem',
+                                  padding: '0.3rem 0.6rem',
                                   color: 'var(--color-red-card)',
-                                  borderColor: 'rgba(239, 68, 68, 0.3)',
-                                  background: 'rgba(239, 68, 68, 0.08)',
+                                  borderColor: 'rgba(239, 68, 68, 0.35)',
+                                  background: 'rgba(239, 68, 68, 0.1)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.25rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer',
                                 }}
                                 onClick={() => setUserToDelete(u)}
                                 title={`Eliminar cuenta de ${u.name}`}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coarc-refmanager-v2';
+const CACHE_NAME = 'coarc-refmanager-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
