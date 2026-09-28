@@ -439,11 +439,11 @@ const resolveTournamentId = async (userId, tournamentName) => {
   }
 };
 
-// Get matches for current user only
+// Get matches for current user only (strictly personal matches for every user, including admins)
 app.get('/api/matches', verifyToken, async (req, res) => {
   try {
-    // Admin gets all matches; regular users only get their own
-    const where = req.user.role === 'admin' ? {} : { userId: req.user.id };
+    // Strictly isolate matches by user ID so users never see each other's matches
+    const where = { userId: req.user.id };
     const list = await Match.findAll({
       where,
       order: [['date', 'DESC'], ['time', 'DESC']]
@@ -451,6 +451,24 @@ app.get('/api/matches', verifyToken, async (req, res) => {
     res.json(list || []);
   } catch (err) {
     console.error('Error fetching matches:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: get all matches or filter by a specific referee (for administrative auditing only)
+app.get('/api/admin/matches', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.userId) {
+      where.userId = req.query.userId;
+    }
+    const list = await Match.findAll({
+      where,
+      order: [['date', 'DESC'], ['time', 'DESC']]
+    });
+    res.json(list || []);
+  } catch (err) {
+    console.error('Error fetching admin matches:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -847,6 +865,57 @@ app.post('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
     });
     res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role, refNumber: user.refNumber });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: delete a user account and cascade delete all their associated data
+app.delete('/api/admin/users/:id', verifyToken, requireAdmin, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const targetUserId = req.params.id;
+
+    // Safety: prevent admin from deleting themselves
+    if (targetUserId === req.user.id) {
+      await t.rollback();
+      return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta de administrador.' });
+    }
+
+    const targetUser = await User.findByPk(targetUserId, { transaction: t });
+    if (!targetUser) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    // 1. Delete all matches of this user
+    await Match.destroy({ where: { userId: targetUserId }, transaction: t });
+
+    // 2. Delete all profiles of this user
+    await Profile.destroy({ where: { userId: targetUserId }, transaction: t });
+
+    // 3. Delete invoice sequences
+    await InvoiceSequence.destroy({ where: { userId: targetUserId }, transaction: t });
+
+    // 4. Delete teams belonging to user's tournaments, then tournaments
+    const userTournaments = await Tournament.findAll({
+      where: { userId: targetUserId },
+      attributes: ['id'],
+      transaction: t,
+    });
+    const tournamentIds = userTournaments.map(tourn => tourn.id);
+    if (tournamentIds.length > 0) {
+      await Team.destroy({ where: { tournamentId: tournamentIds }, transaction: t });
+    }
+    await Tournament.destroy({ where: { userId: targetUserId }, transaction: t });
+
+    // 5. Delete the user
+    await targetUser.destroy({ transaction: t });
+
+    await t.commit();
+    res.json({ message: `La cuenta de ${targetUser.name} y todos sus datos han sido eliminados correctamente.` });
+  } catch (err) {
+    await t.rollback();
+    console.error('Error deleting user:', err);
     res.status(500).json({ error: err.message });
   }
 });

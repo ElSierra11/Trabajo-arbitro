@@ -63,18 +63,19 @@ export const RefProvider = ({ children }) => {
       }
       if (!matchRes.ok) throw new Error(`Error en servidor al cargar partidos (${matchRes.status})`);
       const matchData = await matchRes.json();
+      const currentUserId = getCurrentUserId();
       console.log('Partidos cargados desde API:', matchData?.length);
       
-      if (Array.isArray(matchData) && matchData.length > 0) {
-        setMatches(matchData);
-        try { localStorage.setItem(getCacheKey(), JSON.stringify(matchData)); } catch (_) {}
-      } else {
-        // API returned empty array — user simply has no matches yet. Don't restore another user's cache.
-        setMatches([]);
-      }
+      // Ensure only matches belonging to current user are preserved
+      const cleanMatches = Array.isArray(matchData)
+        ? (currentUserId === 'anonymous' ? matchData : matchData.filter(m => !m.userId || m.userId === currentUserId))
+        : [];
+
+      setMatches(cleanMatches);
+      try { localStorage.setItem(getCacheKey(), JSON.stringify(cleanMatches)); } catch (_) {}
 
       // Determine active profile from local preferences or fallback to first
-      const userProfileKey = `coarc_active_profile_id_${getCurrentUserId()}`;
+      const userProfileKey = `coarc_active_profile_id_${currentUserId}`;
       const savedActiveId = localStorage.getItem(userProfileKey);
       if (savedActiveId && profData.some(p => p.id === savedActiveId)) {
         setActiveProfileId(savedActiveId);
@@ -90,7 +91,13 @@ export const RefProvider = ({ children }) => {
         const cached = localStorage.getItem(getCacheKey());
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) setMatches(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const currentUserId = getCurrentUserId();
+            const cleanCached = currentUserId === 'anonymous'
+              ? parsed
+              : parsed.filter(m => !m.userId || m.userId === currentUserId);
+            setMatches(cleanCached);
+          }
         }
       } catch (_) {}
       setError(err.message || 'No se pudo conectar con el servidor.');

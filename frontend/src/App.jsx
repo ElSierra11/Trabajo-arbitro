@@ -465,7 +465,7 @@ const AuthGate = () => {
   if (!user) return <LoginPage />;
 
   return (
-    <RefProvider>
+    <RefProvider key={user?.id || 'guest'}>
       <AppContent />
     </RefProvider>
   );
