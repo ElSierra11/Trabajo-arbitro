@@ -37,6 +37,12 @@ import {
   RefreshCw,
   Paperclip,
   FileImage,
+  Camera,
+  Eye,
+  RotateCw,
+  Smartphone,
+  WifiOff,
+  Sparkles,
 } from 'lucide-react';
 
 // ==========================================
@@ -68,6 +74,12 @@ export {
   RefreshCw,
   Paperclip,
   FileImage,
+  Camera,
+  Eye,
+  RotateCw,
+  Smartphone,
+  WifiOff,
+  Sparkles,
 };
 
 // Aliases with consistent sizing defaults
@@ -219,3 +231,10 @@ export const ProfilesIcon = ({ size = 20, className = '' }) => <UserLucide size=
 export const IncidentIcon = ({ size = 20, className = '' }) => <AlertCircle size={size} className={className} />;
 export const PaperclipIcon = ({ size = 20, className = '', style = {} }) => <Paperclip size={size} className={className} style={style} />;
 export const FileImageIcon = ({ size = 20, className = '', style = {} }) => <FileImage size={size} className={className} style={style} />;
+export const CameraIcon = ({ size = 20, className = '', style = {} }) => <Camera size={size} className={className} style={style} />;
+export const EyeIcon = ({ size = 20, className = '', style = {} }) => <Eye size={size} className={className} style={style} />;
+export const RotateIcon = ({ size = 20, className = '', style = {} }) => <RotateCw size={size} className={className} style={style} />;
+export const SmartphoneIcon = ({ size = 20, className = '', style = {} }) => <Smartphone size={size} className={className} style={style} />;
+export const WifiOffIcon = ({ size = 20, className = '', style = {} }) => <WifiOff size={size} className={className} style={style} />;
+export const SparklesIcon = ({ size = 20, className = '', style = {} }) => <Sparkles size={size} className={className} style={style} />;
+export const FileTextIcon = ({ size = 20, className = '', style = {} }) => <FileText size={size} className={className} style={style} />;

@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val || 0);
 
-import { UserIcon, ShieldIcon, PlusCircle, CloseIcon, CheckCircle2, FileSpreadsheet, KeyIcon, TrashIcon, ClipboardList } from './Icons';
+import { UserIcon, ShieldIcon, PlusCircle, CloseIcon, CheckCircle2, FileSpreadsheet, KeyIcon, TrashIcon, ClipboardList, AlertCircle } from './Icons';
 
 const AdminPanel = () => {
   const { token, user: currentUser } = useAuth();
@@ -511,8 +511,9 @@ const AdminPanel = () => {
                   Partidos registrados: <strong>{userToDelete.matchCount || 0}</strong>
                 </div>
               </div>
-              <p style={{ color: 'var(--color-red-card)', fontSize: '0.82rem', margin: 0 }}>
-                ⚠️ <strong>Atención:</strong> Esta acción borrará también todos los partidos, perfiles y datos asociados a este árbitro. No se puede deshacer.
+              <p style={{ color: 'var(--color-red-card)', fontSize: '0.82rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span><strong>Atención:</strong> Esta acción borrará también todos los partidos, perfiles y datos asociados a este árbitro. No se puede deshacer.</span>
               </p>
             </div>
 

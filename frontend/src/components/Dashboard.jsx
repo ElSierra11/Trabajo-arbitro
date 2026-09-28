@@ -7,7 +7,8 @@ import {
   CheckIcon, 
   PendingIcon, 
   EditIcon,
-  StatsIcon
+  StatsIcon,
+  SmartphoneIcon
 } from './Icons';
 
 const formatCurrency = (val) =>
@@ -103,7 +104,14 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
-          <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>📲</span>
+          <div style={{
+            width: '38px', height: '38px', borderRadius: '8px',
+            background: 'rgba(var(--color-primary-rgb), 0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--color-primary)', flexShrink: 0
+          }}>
+            <SmartphoneIcon size={20} />
+          </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--color-text)' }}>
               ¿Llevas COARC a los partidos?
@@ -117,9 +125,10 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
           type="button"
           className="btn btn-primary"
           onClick={() => window.dispatchEvent(new Event('open-pwa-install-guide'))}
-          style={{ fontSize: '0.8rem', padding: '0.45rem 1rem', whiteSpace: 'nowrap', fontWeight: '800' }}
+          style={{ fontSize: '0.8rem', padding: '0.45rem 1rem', whiteSpace: 'nowrap', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
         >
-          Cómo Instalar 📲
+          <SmartphoneIcon size={14} />
+          <span>Cómo Instalar</span>
         </button>
       </div>
 

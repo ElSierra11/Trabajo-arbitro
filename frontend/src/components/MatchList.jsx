@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
   PaperclipIcon,
+  CalendarIcon,
 } from './Icons';
 import { generateMatchPDF } from '../utils/pdfGenerator';
 import { exportMatchesToPDF, exportMatchesToExcel } from '../utils/exportUtils';
@@ -532,8 +533,9 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                 >
                   {/* Card Header: Date + Status Badge */}
                   <div className="flex-between" style={{ alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-text-muted)' }}>
-                      📅 {formatDate(match.date)} {match.time ? `• ${match.time}` : ''}
+                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <CalendarIcon size={14} style={{ color: 'var(--color-primary)' }} />
+                      <span>{formatDate(match.date)} {match.time ? `• ${match.time}` : ''}</span>
                     </span>
                     <button
                       onClick={() => togglePaymentStatus(match.id)}

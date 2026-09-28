@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CloseIcon, CheckCircle2 } from './Icons';
+import { 
+  CloseIcon, 
+  CheckCircle2, 
+  SmartphoneIcon, 
+  SparklesIcon, 
+  WifiOffIcon, 
+  DownloadIcon 
+} from './Icons';
 
 const PwaInstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -28,7 +35,6 @@ const PwaInstallPrompt = () => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Check if user dismissed it in this session
       const dismissed = sessionStorage.getItem('coarc_pwa_dismissed');
       if (!dismissed) {
         setShowBanner(true);
@@ -41,13 +47,11 @@ const PwaInstallPrompt = () => {
     if (isAppleDevice) {
       const dismissed = sessionStorage.getItem('coarc_pwa_dismissed');
       if (!dismissed) {
-        // Show after a brief delay for a smoother user experience
         const timer = setTimeout(() => setShowBanner(true), 1500);
         return () => clearTimeout(timer);
       }
     }
 
-    // Listen for custom trigger from anywhere in the app
     const handleOpenInstallGuide = () => {
       setShowModal(true);
     };
@@ -68,7 +72,6 @@ const PwaInstallPrompt = () => {
       }
       setDeferredPrompt(null);
     } else {
-      // If no native prompt (iOS or browser without deferredPrompt), open guided modal
       setShowModal(true);
     }
   };
@@ -121,7 +124,7 @@ const PwaInstallPrompt = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: '800', color: 'var(--color-text)' }}>
-                  ¡Instala COARC en tu Celular! 📲
+                  Instala COARC en tu Celular
                 </h4>
                 <button
                   type="button"
@@ -161,9 +164,10 @@ const PwaInstallPrompt = () => {
               type="button"
               className="btn btn-primary"
               onClick={handleInstallClick}
-              style={{ fontSize: '0.78rem', padding: '0.45rem 1rem', fontWeight: '800' }}
+              style={{ fontSize: '0.78rem', padding: '0.45rem 1rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              {deferredPrompt ? 'Instalar Ahora ⚡' : 'Cómo Instalar 📲'}
+              <SmartphoneIcon size={14} />
+              <span>{deferredPrompt ? 'Instalar Ahora' : 'Cómo Instalar'}</span>
             </button>
           </div>
         </div>
@@ -189,16 +193,14 @@ const PwaInstallPrompt = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: '800',
-                    fontSize: '1.2rem',
                   }}
                 >
-                  📲
+                  <SmartphoneIcon size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Instalar COARC como App</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Instalar COARC como Aplicación</h3>
                   <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-                    Disponible para Android y iPhone
+                    Disponible para dispositivos Android y iPhone
                   </span>
                 </div>
               </div>
@@ -222,9 +224,10 @@ const PwaInstallPrompt = () => {
                     type="button"
                     className="btn btn-primary"
                     onClick={handleInstallClick}
-                    style={{ padding: '0.55rem 1.5rem', fontWeight: '800' }}
+                    style={{ padding: '0.55rem 1.5rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
                   >
-                    ⚡ Instalar App Oficial Ahora
+                    <DownloadIcon size={16} />
+                    <span>Instalar App Oficial Ahora</span>
                   </button>
                 </div>
               )}
@@ -241,11 +244,11 @@ const PwaInstallPrompt = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '1.2rem' }}>🤖</span>
+                    <SmartphoneIcon size={18} style={{ color: 'var(--color-primary)' }} />
                     <strong style={{ fontSize: '0.9rem', color: 'var(--color-text)' }}>En Android (Google Chrome)</strong>
                   </div>
                   <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-                    <li>Abre <strong>trabajo-arbitro.vercel.app</strong> en Google Chrome.</li>
+                    <li>Abre el enlace de la aplicación en Google Chrome.</li>
                     <li>Toca los <strong>tres puntos (⋮)</strong> en la esquina superior derecha.</li>
                     <li>Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong>.</li>
                     <li>Confirma tocando <strong>Instalar</strong>.</li>
@@ -262,13 +265,13 @@ const PwaInstallPrompt = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '1.2rem' }}>🍏</span>
+                    <SmartphoneIcon size={18} style={{ color: 'var(--color-accent)' }} />
                     <strong style={{ fontSize: '0.9rem', color: 'var(--color-text)' }}>En iPhone / iPad (Safari)</strong>
                   </div>
                   <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-                    <li>Abre <strong>trabajo-arbitro.vercel.app</strong> obligatoriamente en <strong>Safari</strong>.</li>
-                    <li>Toca el botón <strong>Compartir</strong> (el icono de un cuadrado con flecha hacia arriba ⎋ en la barra inferior).</li>
-                    <li>Desliza hacia abajo y presiona <strong>"Agregar a la pantalla de inicio"</strong> (con icono ➕).</li>
+                    <li>Abre el enlace de la aplicación en el navegador <strong>Safari</strong>.</li>
+                    <li>Toca el botón <strong>Compartir</strong> (el icono de un cuadro con flecha hacia arriba en la barra inferior).</li>
+                    <li>Desliza hacia abajo y presiona <strong>"Agregar a la pantalla de inicio"</strong>.</li>
                     <li>Toca <strong>"Agregar"</strong> en la esquina superior derecha.</li>
                   </ol>
                 </div>
@@ -276,17 +279,23 @@ const PwaInstallPrompt = () => {
 
               {/* Benefits */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
-                <div style={{ padding: '0.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                  <div style={{ fontSize: '1rem' }}>⚡</div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', marginTop: '0.2rem' }}>Carga al instante</div>
+                <div style={{ padding: '0.65rem 0.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                  <div style={{ color: 'var(--color-primary)', display: 'flex', justifyContent: 'center' }}>
+                    <SparklesIcon size={18} />
+                  </div>
+                  <div style={{ fontSize: '0.74rem', fontWeight: '700', marginTop: '0.3rem' }}>Carga Veloz</div>
                 </div>
-                <div style={{ padding: '0.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                  <div style={{ fontSize: '1rem' }}>📴</div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', marginTop: '0.2rem' }}>Modo Offline</div>
+                <div style={{ padding: '0.65rem 0.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                  <div style={{ color: 'var(--color-accent)', display: 'flex', justifyContent: 'center' }}>
+                    <WifiOffIcon size={18} />
+                  </div>
+                  <div style={{ fontSize: '0.74rem', fontWeight: '700', marginTop: '0.3rem' }}>Modo Offline</div>
                 </div>
-                <div style={{ padding: '0.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                  <div style={{ fontSize: '1rem' }}>📱</div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', marginTop: '0.2rem' }}>App Completa</div>
+                <div style={{ padding: '0.65rem 0.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                  <div style={{ color: 'var(--color-success)', display: 'flex', justifyContent: 'center' }}>
+                    <SmartphoneIcon size={18} />
+                  </div>
+                  <div style={{ fontSize: '0.74rem', fontWeight: '700', marginTop: '0.3rem' }}>App Completa</div>
                 </div>
               </div>
             </div>
