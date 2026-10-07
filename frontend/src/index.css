@@ -7,7 +7,9 @@
 :root {
   /* Colors - Dark Mode (Default) */
   --color-bg: #0b0c10;
+  --color-bg-rgb: 11, 12, 16;
   --color-surface: #131520;
+  --color-surface-rgb: 19, 21, 32;
   --color-surface-hover: #1c1f2e;
   --color-border: #232738;
   --color-border-glow: rgba(204, 255, 0, 0.15);
@@ -46,10 +48,12 @@
 }
 
 [data-theme="light"] {
-  --color-bg: #f1f5f9;
+  --color-bg: #f8fafc;
+  --color-bg-rgb: 248, 250, 252;
   --color-surface: #ffffff;
-  --color-surface-hover: #e2e8f0;
-  --color-border: #cbd5e1;
+  --color-surface-rgb: 255, 255, 255;
+  --color-surface-hover: #f1f5f9;
+  --color-border: #e2e8f0;
   --color-border-glow: rgba(5, 150, 105, 0.3);
   
   --color-text: #0f172a;
@@ -289,16 +293,16 @@ h3 {
 
 .metric-value {
   font-family: var(--font-display);
-  font-size: 2.25rem;
+  font-size: 1.85rem;
   font-weight: 800;
-  line-height: 1.1;
-  margin-top: 0.5rem;
+  line-height: 1.15;
+  margin-top: 0.35rem;
   word-break: break-word;
 }
 
 @media (max-width: 640px) {
   .metric-value {
-    font-size: 1.65rem !important;
+    font-size: 1.45rem !important;
   }
 }
 

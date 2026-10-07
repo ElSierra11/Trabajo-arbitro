@@ -296,33 +296,11 @@ const AppContent = () => {
           <div className="flex-between" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               <h1 style={{ marginBottom: '0.2rem' }}>{getTabTitle()}</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
                 <span className="text-muted" style={{ fontSize: '0.85rem' }}>
                   COARC • <strong style={{ color: 'var(--color-text)', fontWeight: '700' }}>{user?.name || activeProfile.name}</strong>
+                  {user?.refNumber && <span style={{ marginLeft: '0.4rem', color: 'var(--color-primary)', fontWeight: '700' }}>({user.refNumber})</span>}
                 </span>
-                <button
-                  onClick={logout}
-                  style={{
-                    background: 'rgba(255, 42, 95, 0.1)',
-                    border: '1px solid rgba(255, 42, 95, 0.3)',
-                    color: 'var(--color-red-card)',
-                    padding: '0.2rem 0.65rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.72rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 42, 95, 0.2)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 42, 95, 0.1)')}
-                  title="Cerrar sesión de la cuenta"
-                >
-                  <LogoutIcon size={13} />
-                  <span>Cerrar Sesión</span>
-                </button>
               </div>
             </div>
 
