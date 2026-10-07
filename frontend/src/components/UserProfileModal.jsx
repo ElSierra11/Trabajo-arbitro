@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useRefContext } from '../context/RefContext';
-import { CloseIcon, CheckCircle2, AlertCircle, KeyIcon, UserIcon, ReceiptText } from './Icons';
+import { CloseIcon, CheckCircle2, AlertCircle, KeyIcon, UserIcon, ReceiptText, InfoIcon } from './Icons';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -384,9 +384,10 @@ const UserProfileModal = ({ isOpen, onClose }) => {
           {/* TAB 2: Banking Details */}
           {activeTab === 'banking' && (
             <form onSubmit={handleSaveProfileAndBank} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem' }}>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  💡 <strong>Nota:</strong> Estos datos bancarios se usarán automáticamente para completar tu <strong>Cuenta de Cobro en PDF</strong> cada vez que vayas a cobrar tus partidos.
+              <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+                <InfoIcon size={16} className="text-primary shrink-0" style={{ marginTop: '2px', color: 'var(--color-primary)' }} />
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>
+                  <strong>Nota:</strong> Estos datos bancarios se usarán automáticamente para completar tu <strong>Cuenta de Cobro en PDF</strong> cada vez que vayas a cobrar tus partidos.
                 </p>
               </div>
 

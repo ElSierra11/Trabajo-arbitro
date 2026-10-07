@@ -11,7 +11,12 @@ import {
   SmartphoneIcon,
   CalendarIcon,
   PlusIcon,
-  CloseIcon
+  CloseIcon,
+  TimerIcon,
+  AlertTriangleIcon,
+  TrophyIcon,
+  MapPinIcon,
+  Clock,
 } from './Icons';
 import { isScheduled, isMissingTeams, getTimeUntilMatch, extractFieldFromNotes, getMatchDateTime } from '../utils/matchStatus';
 import QuickAssignModal from './QuickAssignModal';
@@ -270,7 +275,8 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
                       alignItems: 'center',
                       gap: '0.35rem'
                     }}>
-                      ⏳ {countdown}
+                      <TimerIcon size={13} />
+                      <span>{countdown}</span>
                     </span>
 
                     {missing ? (
@@ -282,8 +288,12 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
                         fontWeight: '700',
                         padding: '0.15rem 0.5rem',
                         borderRadius: '4px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
                       }}>
-                        ⚠️ Por definir
+                        <AlertTriangleIcon size={12} />
+                        <span>Por definir</span>
                       </span>
                     ) : (
                       <span style={{
@@ -333,10 +343,30 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
                     )}
 
                     {/* Tournament, Cancha & Date */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      {match.tournament && <div>🏆 <strong style={{ color: 'var(--color-text)' }}>{match.tournament}</strong> {match.category ? `(${match.category})` : ''}</div>}
-                      {field && <div>📍 Cancha: <strong style={{ color: 'var(--color-text)' }}>{field}</strong></div>}
-                      <div>📅 {formatDate(match.date)} {match.time ? `• ⏰ ${match.time}` : ''}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      {match.tournament && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <TrophyIcon size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                          <span><strong style={{ color: 'var(--color-text)' }}>{match.tournament}</strong> {match.category ? `(${match.category})` : ''}</span>
+                        </div>
+                      )}
+                      {field && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <MapPinIcon size={14} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                          <span>Cancha: <strong style={{ color: 'var(--color-text)' }}>{field}</strong></span>
+                        </div>
+                      )}
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <CalendarIcon size={14} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                        <span>{formatDate(match.date)}</span>
+                        {match.time && (
+                          <>
+                            <span>•</span>
+                            <Clock size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                            <span>{match.time}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 

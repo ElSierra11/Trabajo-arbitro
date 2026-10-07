@@ -43,6 +43,13 @@ import {
   Smartphone,
   WifiOff,
   Sparkles,
+  Trophy,
+  MapPin,
+  Zap,
+  AlertTriangle,
+  Timer,
+  Search,
+  Info,
 } from 'lucide-react';
 
 // ==========================================
@@ -80,6 +87,8 @@ export {
   Smartphone,
   WifiOff,
   Sparkles,
+  Search,
+  Info,
 };
 
 // Aliases with consistent sizing defaults
@@ -101,6 +110,13 @@ export const MoonIcon = ({ size = 20, className = '' }) => <MoonLucide size={siz
 export const KeyIcon = ({ size = 20, className = '' }) => <KeyLucide size={size} className={className} />;
 export const ShieldIcon = ({ size = 20, className = '' }) => <ShieldLucide size={size} className={className} />;
 export const LogoutIcon = ({ size = 20, className = '' }) => <LogOut size={size} className={className} />;
+export const TrophyIcon = ({ size = 16, className = '' }) => <Trophy size={size} className={className} />;
+export const MapPinIcon = ({ size = 16, className = '' }) => <MapPin size={size} className={className} />;
+export const ZapIcon = ({ size = 16, className = '' }) => <Zap size={size} className={className} />;
+export const AlertTriangleIcon = ({ size = 16, className = '' }) => <AlertTriangle size={size} className={className} />;
+export const TimerIcon = ({ size = 16, className = '' }) => <Timer size={size} className={className} />;
+export const SearchIcon = ({ size = 16, className = '' }) => <Search size={size} className={className} />;
+export const InfoIcon = ({ size = 16, className = '' }) => <Info size={size} className={className} />;
 
 // ==========================================
 // SPORT-SPECIFIC VECTOR ICONS (SVG)

@@ -16,6 +16,10 @@ import {
   ChevronUp,
   PaperclipIcon,
   CalendarIcon,
+  SearchIcon,
+  MapPinIcon,
+  ZapIcon,
+  TimerIcon,
 } from './Icons';
 import { generateMatchPDF } from '../utils/pdfGenerator';
 import { exportMatchesToPDF, exportMatchesToExcel } from '../utils/exportUtils';
@@ -170,8 +174,8 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
               onChange={(e) => setSearch(e.target.value)}
               style={{ paddingLeft: '2.5rem' }}
             />
-            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}>
-              🔍
+            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, display: 'flex', alignItems: 'center', pointerEvents: 'none', color: 'var(--color-text-muted)' }}>
+              <SearchIcon size={16} />
             </span>
           </div>
 
@@ -203,9 +207,9 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
               onChange={(e) => setTypeFilter(e.target.value)}
             >
               <option value="Todos">Todos los Partidos</option>
-              <option value="Programados">📅 Programados / Futuros</option>
-              <option value="Jugados">⚽ Jugados / Disputados</option>
-              <option value="PorCompletar">⚠️ Pendientes por Completar</option>
+              <option value="Programados">Programados / Futuros</option>
+              <option value="Jugados">Jugados / Disputados</option>
+              <option value="PorCompletar">Pendientes por Completar</option>
             </select>
           </div>
 
@@ -402,24 +406,26 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); setQuickAssignMatch(match); }}
                                   className="btn btn-primary"
-                                  style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem', fontWeight: '800' }}
+                                  style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
                                   title="Asignar equipos rápidamente"
                                 >
-                                  ⚡ Asignar
+                                  <ZapIcon size={12} />
+                                  <span>Asignar</span>
                                 </button>
                               </span>
                             ) : (
                               <span>{match.homeTeam} vs {match.awayTeam}</span>
                             )}
                             <span className="text-[10px] text-accent/70 font-normal">
-                              {isExpanded ? '▲' : '▼'}
+                              {isExpanded ? <ChevronUp size={11} className="inline" /> : <ChevronDown size={11} className="inline" />}
                             </span>
                           </div>
                         </td>
                         <td style={{ textAlign: 'center', fontWeight: '700' }}>
                           {isScheduled(match) ? (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', background: 'rgba(var(--color-primary-rgb), 0.12)', padding: '0.15rem 0.45rem', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                              ⏳ {getTimeUntilMatch(match)}
+                            <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', background: 'rgba(var(--color-primary-rgb), 0.12)', padding: '0.15rem 0.45rem', borderRadius: '4px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <TimerIcon size={12} />
+                              <span>{getTimeUntilMatch(match)}</span>
                             </span>
                           ) : (
                             <span style={{ color: 'var(--color-primary)' }}>{match.homeGoals} - {match.awayGoals}</span>
@@ -622,8 +628,12 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                           fontSize: '0.7rem',
                           fontWeight: '800',
                           padding: '0.1rem 0.45rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
                         }}>
-                          ⏳ {countdown}
+                          <TimerIcon size={12} />
+                          <span>{countdown}</span>
                         </span>
                       )}
                     </div>
@@ -679,9 +689,13 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                         color: 'var(--color-accent)',
                         background: 'rgba(0, 240, 255, 0.08)',
                         padding: '0.15rem 0.45rem',
-                        borderRadius: '4px'
+                        borderRadius: '4px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
                       }}>
-                        📍 {field}
+                        <MapPinIcon size={12} />
+                        <span>{field}</span>
                       </span>
                     )}
                   </div>
@@ -710,9 +724,10 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                         type="button"
                         onClick={() => setQuickAssignMatch(match)}
                         className="btn btn-primary"
-                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', fontWeight: '800' }}
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                       >
-                        ⚡ Asignar Equipos
+                        <ZapIcon size={13} />
+                        <span>Asignar Equipos</span>
                       </button>
                     </div>
                   ) : (
@@ -765,8 +780,9 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                       gap: '0.5rem',
                       fontSize: '0.75rem',
                     }}>
-                      <span style={{ color: 'var(--color-accent)' }}>
-                        ⏰ Partido finalizado: ¿Registrar marcador final y planilla?
+                      <span style={{ color: 'var(--color-accent)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Clock size={13} className="shrink-0" />
+                        <span>Partido finalizado: ¿Registrar marcador final y planilla?</span>
                       </span>
                       <button
                         type="button"

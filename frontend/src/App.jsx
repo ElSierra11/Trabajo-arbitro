@@ -18,6 +18,7 @@ import {
   ReceiptText,
   UserIcon,
   EditIcon,
+  SmartphoneIcon,
 } from './components/Icons';
 
 import Dashboard from './components/Dashboard';
@@ -264,7 +265,8 @@ const AppContent = () => {
                 fontWeight: '700',
               }}
             >
-              <span>📲 Instalar en Celular</span>
+              <SmartphoneIcon size={16} />
+              <span>Instalar en Celular</span>
             </button>
 
             <button

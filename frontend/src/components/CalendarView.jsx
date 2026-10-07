@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
-import { ChevronLeft, ChevronRight, PlusIcon, EditIcon, WhistleIcon } from './Icons';
+import { ChevronLeft, ChevronRight, PlusIcon, EditIcon, WhistleIcon, MapPinIcon, ZapIcon } from './Icons';
 import BottomSheet from './BottomSheet';
 import { isScheduled, isMissingTeams, extractFieldFromNotes } from '../utils/matchStatus';
 import QuickAssignModal from './QuickAssignModal';
@@ -205,7 +205,7 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                     const missing = isMissingTeams(m);
                     const scheduled = isScheduled(m);
                     const tagLabel = missing
-                      ? (m.homeTeam ? `${m.homeTeam} vs ?` : '⚠️ Por definir')
+                      ? (m.homeTeam ? `${m.homeTeam} vs ?` : 'Por definir')
                       : `${m.homeTeam || 'Local'} vs ${m.awayTeam || 'Visitante'}`;
 
                     let bgColor = 'rgba(245,158,11,0.15)';
@@ -309,14 +309,14 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                           : m.paymentStatus === 'Pagado' ? 'var(--color-success)' : 'var(--color-pending)'
                     }}
                   >
-                    {missing ? '⚠️ POR ASIGNAR' : (scheduled ? '📅 PROGRAMADO' : (m.paymentStatus === 'Pagado' ? 'PAGADO' : 'PENDIENTE'))}
+                    {missing ? 'POR ASIGNAR' : (scheduled ? 'PROGRAMADO' : (m.paymentStatus === 'Pagado' ? 'PAGADO' : 'PENDIENTE'))}
                   </span>
                 </div>
 
                 <div style={{ fontWeight: '700', fontSize: '0.95rem', margin: '0.25rem 0' }}>
                   {missing ? (
                     <span style={{ color: 'var(--color-pending)', fontStyle: 'italic' }}>
-                      {m.homeTeam ? `${m.homeTeam} vs (Por definir)` : '⚠️ Equipos por definir'}
+                      {m.homeTeam ? `${m.homeTeam} vs (Por definir)` : 'Equipos por definir'}
                     </span>
                   ) : (
                     <span>{m.homeTeam} <span style={{ color: 'var(--color-primary)' }}>vs</span> {m.awayTeam}</span>
@@ -324,8 +324,8 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                 </div>
 
                 {field && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                    📍 Cancha: <strong style={{ color: 'var(--color-text)' }}>{field}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                    <MapPinIcon size={12} className="shrink-0" /> Cancha: <strong style={{ color: 'var(--color-text)' }}>{field}</strong>
                   </div>
                 )}
 
@@ -345,7 +345,8 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
                           setQuickAssignMatch(m);
                         }}
                       >
-                        <span>⚡ Asignar</span>
+                        <ZapIcon size={13} />
+                        <span>Asignar</span>
                       </button>
                     )}
                     <button
