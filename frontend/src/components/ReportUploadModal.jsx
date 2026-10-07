@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   TrashIcon, 
   DownloadIcon, 
@@ -46,6 +46,12 @@ const ReportUploadModal = ({ match, onClose, onFilesChanged }) => {
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  useEffect(() => {
+    if (match?.id) {
+      refreshFiles();
+    }
+  }, [match?.id]);
 
   const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
   const MAX_SIZE = 8 * 1024 * 1024; // 8 MB

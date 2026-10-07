@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
 import { ChevronLeft, ChevronRight, PlusIcon, EditIcon, WhistleIcon } from './Icons';
 import BottomSheet from './BottomSheet';
+import { isScheduled, isMissingTeams, extractFieldFromNotes } from '../utils/matchStatus';
+import QuickAssignModal from './QuickAssignModal';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val || 0);
@@ -17,6 +19,7 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayMatches, setSelectedDayMatches] = useState(null);
   const [selectedDateStr, setSelectedDateStr] = useState('');
+  const [quickAssignMatch, setQuickAssignMatch] = useState(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -198,28 +201,61 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
 
                 {/* DESKTOP VIEW: Full match tags (>= 768px) */}
                 <div className="calendar-tags-desktop" style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflowY: 'auto', maxHeight: '75px' }}>
-                  {dayMatches.map(m => (
-                    <div
-                      key={m.id}
-                      onClick={(e) => { e.stopPropagation(); onEditMatch(m); }}
-                      title={`${m.homeTeam} vs ${m.awayTeam} - ${formatCurrency(m.fee)}`}
-                      style={{
-                        padding: '0.2rem 0.35rem',
-                        borderRadius: '3px',
-                        fontSize: '0.7rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        background: m.paymentStatus === 'Pagado' ? 'rgba(0,200,100,0.15)' : 'rgba(245,158,11,0.15)',
-                        color: m.paymentStatus === 'Pagado' ? 'var(--color-primary)' : 'var(--color-pending)',
-                        borderLeft: `3px solid ${m.paymentStatus === 'Pagado' ? 'var(--color-primary)' : 'var(--color-pending)'}`,
-                      }}
-                    >
-                      {m.homeTeam || 'Local'} vs {m.awayTeam || 'Visitante'}
-                    </div>
-                  ))}
+                  {dayMatches.map(m => {
+                    const missing = isMissingTeams(m);
+                    const scheduled = isScheduled(m);
+                    const tagLabel = missing
+                      ? (m.homeTeam ? `${m.homeTeam} vs ?` : '⚠️ Por definir')
+                      : `${m.homeTeam || 'Local'} vs ${m.awayTeam || 'Visitante'}`;
+
+                    let bgColor = 'rgba(245,158,11,0.15)';
+                    let textColor = 'var(--color-pending)';
+                    let borderCol = 'var(--color-pending)';
+
+                    if (missing) {
+                      bgColor = 'rgba(245,158,11,0.2)';
+                      textColor = '#fbbf24';
+                      borderCol = '#f59e0b';
+                    } else if (scheduled) {
+                      bgColor = 'rgba(59,130,246,0.15)';
+                      textColor = '#60a5fa';
+                      borderCol = '#3b82f6';
+                    } else if (m.paymentStatus === 'Pagado') {
+                      bgColor = 'rgba(0,200,100,0.15)';
+                      textColor = 'var(--color-primary)';
+                      borderCol = 'var(--color-primary)';
+                    }
+
+                    return (
+                      <div
+                        key={m.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (missing) {
+                            setQuickAssignMatch(m);
+                          } else {
+                            onEditMatch(m);
+                          }
+                        }}
+                        title={missing ? 'Equipos por definir - Clic para asignar' : `${m.homeTeam} vs ${m.awayTeam} - ${formatCurrency(m.fee)}`}
+                        style={{
+                          padding: '0.2rem 0.35rem',
+                          borderRadius: '3px',
+                          fontSize: '0.7rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          background: bgColor,
+                          color: textColor,
+                          borderLeft: `3px solid ${borderCol}`,
+                        }}
+                      >
+                        {tagLabel}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -235,58 +271,99 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
         subtitle={`${selectedDayMatches?.length || 0} ${selectedDayMatches?.length === 1 ? 'partido agendado' : 'partidos agendados'}`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {selectedDayMatches?.map(m => (
-            <div
-              key={m.id}
-              className="card"
-              style={{
-                padding: '0.85rem',
-                backgroundColor: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)'
-              }}
-            >
-              <div className="flex-between" style={{ marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--color-text-muted)' }}>
-                  {m.tournament || 'Torneo General'} • {m.category || 'Cat. Libre'}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: '700',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '4px',
-                    backgroundColor: m.paymentStatus === 'Pagado' ? 'rgba(0,200,100,0.12)' : 'rgba(245,158,11,0.12)',
-                    color: m.paymentStatus === 'Pagado' ? 'var(--color-success)' : 'var(--color-pending)'
-                  }}
-                >
-                  {m.paymentStatus === 'Pagado' ? 'PAGADO' : 'PENDIENTE'}
-                </span>
-              </div>
+          {selectedDayMatches?.map(m => {
+            const missing = isMissingTeams(m);
+            const scheduled = isScheduled(m);
+            const { field } = extractFieldFromNotes(m.notes);
 
-              <div style={{ fontWeight: '700', fontSize: '0.95rem', margin: '0.25rem 0' }}>
-                {m.homeTeam} <span style={{ color: 'var(--color-primary)' }}>vs</span> {m.awayTeam}
-              </div>
-
-              <div className="flex-between" style={{ marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{m.role || 'Central'} • </span>
-                  <span style={{ fontWeight: '700', color: 'var(--color-accent)', fontSize: '0.85rem' }}>{formatCurrency(m.fee)}</span>
+            return (
+              <div
+                key={m.id}
+                className="card"
+                style={{
+                  padding: '0.85rem',
+                  backgroundColor: 'var(--color-surface)',
+                  border: missing ? '1px dashed var(--color-pending)' : '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)'
+                }}
+              >
+                <div className="flex-between" style={{ marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.3rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--color-text-muted)' }}>
+                    {m.tournament || 'Torneo General'} • {m.category || 'Cat. Libre'}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: '700',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: missing
+                        ? 'rgba(245,158,11,0.18)'
+                        : scheduled
+                          ? 'rgba(59,130,246,0.18)'
+                          : m.paymentStatus === 'Pagado' ? 'rgba(0,200,100,0.12)' : 'rgba(245,158,11,0.12)',
+                      color: missing
+                        ? 'var(--color-pending)'
+                        : scheduled
+                          ? '#38bdf8'
+                          : m.paymentStatus === 'Pagado' ? 'var(--color-success)' : 'var(--color-pending)'
+                    }}
+                  >
+                    {missing ? '⚠️ POR ASIGNAR' : (scheduled ? '📅 PROGRAMADO' : (m.paymentStatus === 'Pagado' ? 'PAGADO' : 'PENDIENTE'))}
+                  </span>
                 </div>
-                <button
-                  className="btn btn-secondary"
-                  style={{ minHeight: '44px', padding: '0.35rem 0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}
-                  onClick={() => {
-                    setSelectedDayMatches(null);
-                    onEditMatch(m);
-                  }}
-                >
-                  <EditIcon size={15} />
-                  <span>Ver / Editar</span>
-                </button>
+
+                <div style={{ fontWeight: '700', fontSize: '0.95rem', margin: '0.25rem 0' }}>
+                  {missing ? (
+                    <span style={{ color: 'var(--color-pending)', fontStyle: 'italic' }}>
+                      {m.homeTeam ? `${m.homeTeam} vs (Por definir)` : '⚠️ Equipos por definir'}
+                    </span>
+                  ) : (
+                    <span>{m.homeTeam} <span style={{ color: 'var(--color-primary)' }}>vs</span> {m.awayTeam}</span>
+                  )}
+                </div>
+
+                {field && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
+                    📍 Cancha: <strong style={{ color: 'var(--color-text)' }}>{field}</strong>
+                  </div>
+                )}
+
+                <div className="flex-between" style={{ marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{m.role || 'Central'} • </span>
+                    <span style={{ fontWeight: '700', color: 'var(--color-accent)', fontSize: '0.85rem' }}>{formatCurrency(m.fee)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    {missing && (
+                      <button
+                        className="btn btn-primary"
+                        style={{ minHeight: '40px', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          setSelectedDayMatches(null);
+                          setQuickAssignMatch(m);
+                        }}
+                      >
+                        <span>⚡ Asignar</span>
+                      </button>
+                    )}
+                    <button
+                      className="btn btn-secondary"
+                      style={{ minHeight: '40px', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
+                      onClick={() => {
+                        setSelectedDayMatches(null);
+                        onEditMatch(m);
+                      }}
+                    >
+                      <EditIcon size={14} />
+                      <span>Editar</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <button
             className="btn btn-primary"
@@ -301,6 +378,13 @@ const CalendarView = ({ onAddMatch, onEditMatch }) => {
           </button>
         </div>
       </BottomSheet>
+
+      {/* Quick assign modal for calendar view */}
+      <QuickAssignModal
+        match={quickAssignMatch}
+        isOpen={Boolean(quickAssignMatch)}
+        onClose={() => setQuickAssignMatch(null)}
+      />
 
       <style>{`
         @media (max-width: 768px) {

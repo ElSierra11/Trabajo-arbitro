@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
 import { 
   WhistleIcon, 
@@ -8,8 +8,12 @@ import {
   PendingIcon, 
   EditIcon,
   StatsIcon,
-  SmartphoneIcon
+  SmartphoneIcon,
+  CalendarIcon,
+  PlusIcon
 } from './Icons';
+import { isScheduled, isMissingTeams, getTimeUntilMatch, extractFieldFromNotes, getMatchDateTime } from '../utils/matchStatus';
+import QuickAssignModal from './QuickAssignModal';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val || 0);
@@ -23,7 +27,20 @@ const formatDate = (dateStr) => {
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
-  const { matches, stats, togglePaymentStatus } = useRefContext();
+  const { matches = [], stats, togglePaymentStatus } = useRefContext();
+
+  const [quickAssignMatch, setQuickAssignMatch] = useState(null);
+
+  // Partidos programados / futuros ordenados por fecha y hora más cercana primero
+  const upcomingMatches = useMemo(() => {
+    return matches
+      .filter(m => isScheduled(m))
+      .sort((a, b) => {
+        const timeA = getMatchDateTime(a.date, a.time)?.getTime() || Infinity;
+        const timeB = getMatchDateTime(b.date, b.time)?.getTime() || Infinity;
+        return timeA - timeB;
+      });
+  }, [matches]);
 
   const recentMatches = matches.slice(0, 4);
 
@@ -131,6 +148,186 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
           <span>Cómo Instalar</span>
         </button>
       </div>
+
+      {/* SECCIÓN DESTACADA: Próximos Partidos Programados */}
+      {upcomingMatches.length > 0 && (
+        <section className="card" style={{
+          border: '1px solid rgba(var(--color-primary-rgb), 0.35)',
+          background: 'linear-gradient(135deg, rgba(var(--color-surface-rgb, 19, 21, 32), 0.98), rgba(0, 240, 255, 0.04))',
+          padding: '1.25rem',
+        }}>
+          <div className="flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '8px',
+                background: 'rgba(var(--color-primary-rgb), 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--color-primary)'
+              }}>
+                <CalendarIcon size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>Próximos Partidos</span>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    background: 'var(--color-primary)',
+                    color: '#000',
+                    fontWeight: '800',
+                    padding: '0.1rem 0.5rem',
+                    borderRadius: '999px'
+                  }}>
+                    {upcomingMatches.length}
+                  </span>
+                </h3>
+                <p className="text-muted" style={{ fontSize: '0.78rem', margin: 0 }}>
+                  Designaciones con cuenta regresiva y asignación rápida de equipos
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onAddMatch}
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <PlusIcon size={14} />
+              <span>Programar Otro</span>
+            </button>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1rem',
+          }}>
+            {upcomingMatches.slice(0, 4).map(match => {
+              const missing = isMissingTeams(match);
+              const { field } = extractFieldFromNotes(match.notes || '');
+              const countdown = getTimeUntilMatch(match);
+
+              return (
+                <div
+                  key={match.id}
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: missing ? '1px dashed rgba(245, 158, 11, 0.5)' : '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md, 12px)',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Top row: Countdown pill & role / badge */}
+                  <div className="flex-between" style={{ alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <span style={{
+                      background: 'rgba(var(--color-primary-rgb), 0.12)',
+                      color: 'var(--color-primary)',
+                      border: '1px solid rgba(var(--color-primary-rgb), 0.25)',
+                      fontSize: '0.72rem',
+                      fontWeight: '700',
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}>
+                      ⏳ {countdown}
+                    </span>
+
+                    {missing ? (
+                      <span style={{
+                        background: 'rgba(245, 158, 11, 0.15)',
+                        color: 'var(--color-pending)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        fontSize: '0.7rem',
+                        fontWeight: '700',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '4px',
+                      }}>
+                        Por asignar equipos
+                      </span>
+                    ) : (
+                      <span style={{
+                        background: 'rgba(0, 240, 255, 0.1)',
+                        color: 'var(--color-accent)',
+                        fontSize: '0.7rem',
+                        fontWeight: '700',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '4px',
+                      }}>
+                        {match.role || 'Central'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Teams or Placeholder */}
+                  <div>
+                    {missing ? (
+                      <div style={{ margin: '0.35rem 0' }}>
+                        <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.92rem', fontWeight: '600' }}>
+                          Equipos por confirmar
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setQuickAssignMatch(match)}
+                          className="btn btn-primary"
+                          style={{
+                            marginTop: '0.5rem',
+                            fontSize: '0.75rem',
+                            padding: '0.35rem 0.7rem',
+                            fontWeight: '700',
+                            width: '100%',
+                            justifyContent: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem'
+                          }}
+                        >
+                          <PlusIcon size={14} />
+                          <span>Asignar Equipos en 1 Paso</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--color-text)', margin: '0.25rem 0' }}>
+                        {match.homeTeam} <span style={{ color: 'var(--color-primary)' }}>vs</span> {match.awayTeam}
+                      </div>
+                    )}
+
+                    {/* Tournament, Cancha & Date */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      {match.tournament && <div>🏆 {match.tournament} {match.category ? `(Sub-${match.category})` : ''}</div>}
+                      {field && <div>📍 Cancha: <strong style={{ color: 'var(--color-text)' }}>{field}</strong></div>}
+                      <div>📅 {formatDate(match.date)} {match.time ? `• ⏰ ${match.time}` : ''}</div>
+                    </div>
+                  </div>
+
+                  {/* Bottom row: fee & action */}
+                  <div className="flex-between" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--color-accent)' }}>
+                      {formatCurrency(match.fee)}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => onEditMatch(match)}
+                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      <EditIcon size={13} />
+                      <span>Editar</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 4 Metric Cards Grid */}
       <section className="grid-cols-4">
@@ -372,6 +569,15 @@ const Dashboard = ({ onNavigate, onAddMatch, onEditMatch }) => {
             </table>
           </div>
         </section>
+      )}
+
+      {/* Modal para asignación rápida de equipos en 1 paso */}
+      {quickAssignMatch && (
+        <QuickAssignModal
+          match={quickAssignMatch}
+          isOpen={Boolean(quickAssignMatch)}
+          onClose={() => setQuickAssignMatch(null)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRefContext } from '../context/RefContext';
 import { CloseIcon, CardIcon, SoccerBallIcon } from './Icons';
+import { extractFieldFromNotes, combineFieldWithNotes } from '../utils/matchStatus';
 
 const CATEGORIES = [
   { value: '2012', label: 'Sub-2012 (Escuela)' },
@@ -24,7 +25,7 @@ const ROLES = [
 ];
 
 const MatchForm = ({ isOpen, onClose, editingMatch }) => {
-  const { addMatch, updateMatch, deleteMatch, activeProfile } = useRefContext();
+  const { matches = [], addMatch, updateMatch, deleteMatch, activeProfile } = useRefContext();
 
   const [formData, setFormData] = useState({
     date: '',
@@ -45,6 +46,24 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
     cards: [], // Array of { id, player, type: 'amarilla'|'roja', minute, reason }
   });
 
+  // Campo de Cancha/Escenario (almacenado de forma compatible)
+  const [cancha, setCancha] = useState('');
+
+  // Autocompletado inteligente de equipos y torneos previamente registrados
+  const { existingTournaments, existingTeams } = useMemo(() => {
+    const tournSet = new Set();
+    const teamSet = new Set();
+    matches.forEach(m => {
+      if (m.tournament && m.tournament.trim()) tournSet.add(m.tournament.trim());
+      if (m.homeTeam && m.homeTeam.trim()) teamSet.add(m.homeTeam.trim());
+      if (m.awayTeam && m.awayTeam.trim()) teamSet.add(m.awayTeam.trim());
+    });
+    return {
+      existingTournaments: Array.from(tournSet).sort(),
+      existingTeams: Array.from(teamSet).sort()
+    };
+  }, [matches]);
+
   // Local inputs states for adding goals/cards
   const [goalPlayer, setGoalPlayer] = useState('');
   const [goalTeam, setGoalTeam] = useState('local');
@@ -61,6 +80,8 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
   useEffect(() => {
     if (isOpen) {
       if (editingMatch) {
+        const { field, cleanNotes } = extractFieldFromNotes(editingMatch.notes || '');
+        setCancha(field);
         setFormData({
           date: editingMatch.date || '',
           time: editingMatch.time || '',
@@ -75,11 +96,12 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
           role: editingMatch.role || 'Árbitro Central',
           fee: editingMatch.fee || 0,
           paymentStatus: editingMatch.paymentStatus || 'Pendiente',
-          notes: editingMatch.notes || '',
+          notes: cleanNotes,
           goals: editingMatch.goals || [],
           cards: editingMatch.cards || [],
         });
       } else {
+        setCancha('');
         setFormData({
           date: new Date().toISOString().slice(0, 10),
           time: '',
@@ -226,8 +248,6 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
   const validate = () => {
     const tempErrors = {};
     if (!formData.date) tempErrors.date = 'La fecha es obligatoria';
-    if (!formData.homeTeam.trim()) tempErrors.homeTeam = 'El equipo local es obligatorio';
-    if (!formData.awayTeam.trim()) tempErrors.awayTeam = 'El equipo visitante es obligatorio';
     if (formData.fee < 0) tempErrors.fee = 'La tarifa no puede ser negativa';
     
     setErrors(tempErrors);
@@ -238,10 +258,18 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
     e.preventDefault();
     if (!validate()) return;
 
+    const finalNotes = combineFieldWithNotes(cancha, formData.notes);
+    const payload = {
+      ...formData,
+      homeTeam: formData.homeTeam ? formData.homeTeam.trim() : '',
+      awayTeam: formData.awayTeam ? formData.awayTeam.trim() : '',
+      notes: finalNotes,
+    };
+
     if (editingMatch) {
-      updateMatch(editingMatch.id, formData);
+      updateMatch(editingMatch.id, payload);
     } else {
-      addMatch(formData);
+      addMatch(payload);
     }
     onClose();
   };
@@ -249,10 +277,23 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content max-w-2xl">
+        {/* Datalists para autocompletado inteligente */}
+        <datalist id="form-tournaments-list">
+          {existingTournaments.map(t => <option key={t} value={t} />)}
+        </datalist>
+        <datalist id="form-teams-list">
+          {existingTeams.map(team => <option key={team} value={team} />)}
+        </datalist>
+
         <div className="modal-header">
-          <h3 className="text-xl font-bold">
-            {editingMatch ? 'Editar Partido' : 'Registrar Partido'}
-          </h3>
+          <div>
+            <h3 className="text-xl font-bold">
+              {editingMatch ? 'Editar Partido' : 'Registrar Partido'}
+            </h3>
+            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Puedes programar la fecha y hora hoy, y asignar los equipos más adelante
+            </span>
+          </div>
           <button 
             type="button"
             className="btn-icon-only rounded-full" 
@@ -277,6 +318,7 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
                   value={formData.date}
                   onChange={handleChange}
                   className={`form-control ${errors.date ? 'border-red-card' : ''}`}
+                  required
                 />
                 {errors.date && <span className="text-xs text-red-card">{errors.date}</span>}
               </div>
@@ -294,7 +336,7 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
               </div>
             </div>
 
-            {/* Tournament and Category Row */}
+            {/* Tournament, Category and Field/Cancha Row */}
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="tournament">Torneo / Liga</label>
@@ -302,6 +344,7 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
                   type="text" 
                   id="tournament" 
                   name="tournament"
+                  list="form-tournaments-list"
                   placeholder="Ej. Torneo de Liga COARC"
                   value={formData.tournament}
                   onChange={handleChange}
@@ -327,36 +370,58 @@ const MatchForm = ({ isOpen, onClose, editingMatch }) => {
               </div>
             </div>
 
-            {/* Teams Row */}
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label" htmlFor="homeTeam">Equipo Local *</label>
-                <input 
-                  type="text" 
-                  id="homeTeam" 
-                  name="homeTeam"
-                  placeholder="Ej. Atlético Nacional"
-                  value={formData.homeTeam}
-                  onChange={handleChange}
-                  className="form-control"
-                  style={{ borderColor: errors.homeTeam ? 'var(--color-red-card)' : '' }}
-                />
-                {errors.homeTeam && <span className="text-xs text-red-card">{errors.homeTeam}</span>}
-              </div>
+            {/* Field / Cancha */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="cancha">Cancha / Sede Deportiva</label>
+              <input 
+                type="text" 
+                id="cancha" 
+                name="cancha"
+                placeholder="Ej. Cancha 1 - Villa Olímpica, Club Campestre"
+                value={cancha}
+                onChange={(e) => setCancha(e.target.value)}
+                className="form-control"
+              />
+            </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="awayTeam">Equipo Visitante *</label>
-                <input 
-                  type="text" 
-                  id="awayTeam" 
-                  name="awayTeam"
-                  placeholder="Ej. Millonarios"
-                  value={formData.awayTeam}
-                  onChange={handleChange}
-                  className="form-control"
-                  style={{ borderColor: errors.awayTeam ? 'var(--color-red-card)' : '' }}
-                />
-                {errors.awayTeam && <span className="text-xs text-red-card">{errors.awayTeam}</span>}
+            {/* Teams Row - Optional for scheduled matches */}
+            <div className="p-3 rounded-lg border border-border" style={{ backgroundColor: 'rgba(0, 240, 255, 0.03)' }}>
+              <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
+                <span className="form-label font-bold" style={{ margin: 0, fontSize: '0.85rem' }}>
+                  Equipos del Encuentro
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: '600' }}>
+                  (Opcional si faltan por asignar)
+                </span>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="homeTeam" style={{ fontSize: '0.8rem' }}>Equipo Local</label>
+                  <input 
+                    type="text" 
+                    id="homeTeam" 
+                    name="homeTeam"
+                    list="form-teams-list"
+                    placeholder="Ej. Real Sociedad (o déjalo vacío)"
+                    value={formData.homeTeam}
+                    onChange={handleChange}
+                    className="form-control"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="awayTeam" style={{ fontSize: '0.8rem' }}>Equipo Visitante</label>
+                  <input 
+                    type="text" 
+                    id="awayTeam" 
+                    name="awayTeam"
+                    list="form-teams-list"
+                    placeholder="Ej. Deportivo Córdoba (o déjalo vacío)"
+                    value={formData.awayTeam}
+                    onChange={handleChange}
+                    className="form-control"
+                  />
+                </div>
               </div>
             </div>
 

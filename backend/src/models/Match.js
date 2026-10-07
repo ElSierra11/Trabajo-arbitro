@@ -36,11 +36,13 @@ const Match = sequelize.define('Match', {
   },
   homeTeam: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
+    defaultValue: '',
   },
   awayTeam: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
+    defaultValue: '',
   },
   homeGoals: {
     type: DataTypes.INTEGER,

@@ -43,7 +43,7 @@ const InvoiceModal = ({ isOpen, onClose }) => {
         const res = await fetch(`${API_URL}/invoices/next-number`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ year: new Date().getFullYear() }),
+          body: JSON.stringify({ year: new Date().getFullYear(), peek: true }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -109,6 +109,16 @@ const InvoiceModal = ({ isOpen, onClose }) => {
       alert('Debes seleccionar al menos un partido para cobrar.');
       return;
     }
+
+    // Atomically commit the consecutive invoice increment in backend
+    try {
+      const token = localStorage.getItem('coarc_token');
+      fetch(`${API_URL}/invoices/next-number`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ year: new Date().getFullYear() }),
+      }).catch(() => {});
+    } catch (_) {}
 
     generateInvoicePDF({
       invoiceNumber,

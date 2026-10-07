@@ -1,6 +1,4 @@
 // Invoice / Account Statement PDF Generator for COARC
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val || 0);
@@ -11,7 +9,7 @@ const formatDate = (dateStr) => {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
-export const generateInvoicePDF = ({
+export const generateInvoicePDF = async ({
   invoiceNumber = 'CC-001',
   clientName = 'Liga de Fútbol de Córdoba',
   clientNit = '',
@@ -19,7 +17,8 @@ export const generateInvoicePDF = ({
   bankInfo = { bank: 'Bancolombia', accountType: 'Ahorros', accountNumber: '123-456789-00', holder: 'Alejandro Sierra' },
   refereeInfo = { name: 'Alejandro Sierra', refNumber: 'COARC-01' }
 }) => {
-  const doc = jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const { default: jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 

@@ -1,7 +1,3 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-
 const formatCurrency = (val) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
 };
@@ -13,9 +9,11 @@ const formatDate = (dateStr) => {
 };
 
 /**
- * Exporta el listado de partidos a PDF
+ * Exporta el listado de partidos a PDF (Carga dinámica de jsPDF)
  */
-export const exportMatchesToPDF = (matches, title = 'Reporte de Partidos - COARC') => {
+export const exportMatchesToPDF = async (matches, title = 'Reporte de Partidos - COARC') => {
+  const { default: jsPDF } = await import('jspdf');
+  await import('jspdf-autotable');
   const doc = new jsPDF();
 
   // Header COARC
@@ -75,9 +73,10 @@ export const exportMatchesToPDF = (matches, title = 'Reporte de Partidos - COARC
 };
 
 /**
- * Exporta el listado de partidos a Excel
+ * Exporta el listado de partidos a Excel (Carga dinámica de xlsx)
  */
-export const exportMatchesToExcel = (matches, fileName = 'COARC_Partidos') => {
+export const exportMatchesToExcel = async (matches, fileName = 'COARC_Partidos') => {
+  const XLSX = await import('xlsx');
   const excelData = matches.map((m, idx) => ({
     'N°': idx + 1,
     'Fecha': m.date || '',
@@ -100,9 +99,11 @@ export const exportMatchesToExcel = (matches, fileName = 'COARC_Partidos') => {
 };
 
 /**
- * Exporta la liquidación/resumen de finanzas a PDF
+ * Exporta la liquidación/resumen de finanzas a PDF (Carga dinámica de jsPDF)
  */
-export const exportFinancialsToPDF = (stats, profileName = 'Árbitro') => {
+export const exportFinancialsToPDF = async (stats, profileName = 'Árbitro') => {
+  const { default: jsPDF } = await import('jspdf');
+  await import('jspdf-autotable');
   const doc = new jsPDF();
 
   // Header COARC

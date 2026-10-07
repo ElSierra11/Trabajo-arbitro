@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import multer from 'multer';
+import { Op } from 'sequelize';
 import sequelize, { connectDB } from './config/db.js';
 import User from './models/User.js';
 import Profile from './models/Profile.js';
@@ -412,9 +413,23 @@ app.delete('/api/profiles/:id', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Sin permiso para eliminar este perfil.' });
     }
 
-    await Match.destroy({ where: { profileId: profile.id } });
+    // Reassign matches to default profile to PREVENT PERMANENT DATA LOSS
+    const fallbackProfile = await Profile.findOne({
+      where: {
+        userId: profile.userId,
+        id: { [Op.ne]: profile.id }
+      },
+      order: [['createdAt', 'ASC']]
+    });
+
+    const fallbackProfileId = fallbackProfile ? fallbackProfile.id : null;
+    await Match.update(
+      { profileId: fallbackProfileId },
+      { where: { profileId: profile.id } }
+    );
+
     await profile.destroy();
-    res.json({ message: 'Perfil eliminado correctamente.' });
+    res.json({ message: 'Perfil eliminado correctamente y partidos reasignados.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -439,16 +454,49 @@ const resolveTournamentId = async (userId, tournamentName) => {
   }
 };
 
+// Helper to strip heavy base64 data strings from report files when listing matches
+const sanitizeMatchList = (matches) => {
+  return (matches || []).map(m => {
+    const json = typeof m.toJSON === 'function' ? m.toJSON() : { ...m };
+    if (Array.isArray(json.reportFiles)) {
+      json.reportFiles = json.reportFiles.map(({ data, ...meta }) => meta);
+    }
+    return json;
+  });
+};
+
 // Get matches for current user only (strictly personal matches for every user, including admins)
 app.get('/api/matches', verifyToken, async (req, res) => {
   try {
     // Strictly isolate matches by user ID so users never see each other's matches
     const where = { userId: req.user.id };
+
+    // Optional backwards-compatible pagination
+    const page = parseInt(req.query.page, 10);
+    const limit = parseInt(req.query.limit, 10);
+    const isPaginated = !isNaN(page) && !isNaN(limit) && page > 0 && limit > 0;
+
+    if (isPaginated) {
+      const offset = (page - 1) * limit;
+      const { count, rows } = await Match.findAndCountAll({
+        where,
+        order: [['date', 'DESC'], ['time', 'DESC']],
+        limit,
+        offset,
+      });
+      return res.json({
+        matches: sanitizeMatchList(rows),
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+      });
+    }
+
     const list = await Match.findAll({
       where,
       order: [['date', 'DESC'], ['time', 'DESC']]
     });
-    res.json(list || []);
+    res.json(sanitizeMatchList(list || []));
   } catch (err) {
     console.error('Error fetching matches:', err);
     res.status(500).json({ error: err.message });
@@ -466,9 +514,23 @@ app.get('/api/admin/matches', verifyToken, requireAdmin, async (req, res) => {
       where,
       order: [['date', 'DESC'], ['time', 'DESC']]
     });
-    res.json(list || []);
+    res.json(sanitizeMatchList(list || []));
   } catch (err) {
     console.error('Error fetching admin matches:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get a single match by ID (includes complete details)
+app.get('/api/matches/:id', verifyToken, async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+    if (match.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Sin permiso para consultar este partido.' });
+    }
+    res.json(match);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -538,8 +600,8 @@ app.put('/api/matches/:id', verifyToken, async (req, res) => {
       tournamentId,
       tournament: tournamentName,
       category: d.category ?? match.category,
-      homeTeam: d.homeTeam ? sanitizeName(d.homeTeam) : match.homeTeam,
-      awayTeam: d.awayTeam ? sanitizeName(d.awayTeam) : match.awayTeam,
+      homeTeam: d.homeTeam !== undefined ? sanitizeName(d.homeTeam) : match.homeTeam,
+      awayTeam: d.awayTeam !== undefined ? sanitizeName(d.awayTeam) : match.awayTeam,
       homeGoals: d.homeGoals !== undefined ? Number(d.homeGoals) : match.homeGoals,
       awayGoals: d.awayGoals !== undefined ? Number(d.awayGoals) : match.awayGoals,
       yellowCards: d.yellowCards !== undefined ? Number(d.yellowCards) : match.yellowCards,
@@ -758,11 +820,24 @@ app.get('/api/stats/summary', verifyToken, async (req, res) => {
 // 6. ATOMIC INVOICE CONSECUTIVE GENERATION
 // ==========================================
 app.post('/api/invoices/next-number', verifyToken, async (req, res) => {
+  const isPeek = req.body?.peek === true || req.query?.peek === 'true';
+  const userId = req.user.id;
+  const year = req.body?.year || new Date().getFullYear();
+
+  if (isPeek) {
+    try {
+      const seq = await InvoiceSequence.findOne({ where: { userId, year } });
+      const nextNum = seq ? seq.currentNumber + 1 : 1;
+      const formatted = `CC-${year}-${String(nextNum).padStart(3, '0')}`;
+      return res.json({ invoiceNumber: formatted, number: nextNum, year, peek: true });
+    } catch (peekErr) {
+      console.error('Error previsualizando número de factura:', peekErr);
+      return res.status(500).json({ error: peekErr.message });
+    }
+  }
+
   const t = await sequelize.transaction();
   try {
-    const userId = req.user.id;
-    const year = req.body.year || new Date().getFullYear();
-
     let seq = await InvoiceSequence.findOne({
       where: { userId, year },
       lock: t.LOCK.UPDATE,
@@ -813,22 +888,50 @@ app.post('/api/import', verifyToken, async (req, res) => {
   }
 });
 
-// Admin: list all users with match stats
+// Admin: list all users with match stats (Optimized: single aggregate query, no N+1)
 app.get('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
   try {
     const users = await User.findAll({
-      attributes: ['id', 'name', 'email', 'role', 'refNumber', 'createdAt']
+      attributes: ['id', 'name', 'email', 'role', 'refNumber', 'createdAt'],
+      order: [['createdAt', 'DESC']]
     });
-    // Enrich each user with their match count and total earnings
-    const enriched = await Promise.all(users.map(async (u) => {
-      const userMatches = await Match.findAll({ where: { userId: u.id } });
-      const matchCount = userMatches.length;
-      const totalEarnings = userMatches.reduce((sum, m) => sum + (Number(m.fee) || 0), 0);
-      const paidEarnings = userMatches.filter(m => m.paymentStatus === 'Pagado').reduce((sum, m) => sum + (Number(m.fee) || 0), 0);
-      return { ...u.toJSON(), matchCount, totalEarnings, paidEarnings };
-    }));
+
+    // Single aggregated query to prevent N+1 queries
+    const matchAggregates = await Match.findAll({
+      attributes: [
+        'userId',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'matchCount'],
+        [sequelize.fn('SUM', sequelize.col('fee')), 'totalEarnings'],
+        [sequelize.literal(`SUM(CASE WHEN "paymentStatus" = 'Pagado' THEN "fee" ELSE 0 END)`), 'paidEarnings'],
+      ],
+      group: ['userId'],
+      raw: true,
+    });
+
+    const statsMap = {};
+    for (const row of matchAggregates) {
+      if (row.userId) {
+        statsMap[row.userId] = {
+          matchCount: Number(row.matchCount) || 0,
+          totalEarnings: Number(row.totalEarnings) || 0,
+          paidEarnings: Number(row.paidEarnings) || 0,
+        };
+      }
+    }
+
+    const enriched = users.map(u => {
+      const stats = statsMap[u.id] || { matchCount: 0, totalEarnings: 0, paidEarnings: 0 };
+      return {
+        ...u.toJSON(),
+        matchCount: stats.matchCount,
+        totalEarnings: stats.totalEarnings,
+        paidEarnings: stats.paidEarnings,
+      };
+    });
+
     res.json(enriched);
   } catch (err) {
+    console.error('Error fetching admin users:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -965,40 +1068,31 @@ const startServer = async () => {
   try {
     await connectDB();
     
-    // Safely sync without killing server process if alter has PostgreSQL conflicts
-    try {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Tablas e índices de la base de datos sincronizados con alter.');
-    } catch (alterErr) {
-      console.warn('⚠️ Advertencia en sync({ alter }):', alterErr.message);
+    // Sincronización segura de esquema:
+    // En producción (Neon), NUNCA ejecutar alter: true para evitar locks o modificaciones no deseadas.
+    if (process.env.NODE_ENV !== 'production') {
       try {
         await sequelize.sync();
-        console.log('✅ Tablas de la base de datos sincronizadas en modo seguro.');
+        console.log('✅ Tablas verificadas en modo seguro (local/dev).');
       } catch (safeErr) {
-        console.warn('⚠️ Advertencia en sync seguro:', safeErr.message);
+        console.warn('⚠️ Advertencia en sync seguro local:', safeErr.message);
       }
+    } else {
+      console.log('✅ Conexión con base de datos en producción activa (sync omitido por seguridad de datos).');
     }
 
-    // Migration safety: copy any rows from lowercase 'matches' back into '"Matches"' and vice versa
-    try {
-      await sequelize.query(`
-        INSERT INTO "Matches" (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
-        SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
-        FROM matches
-        ON CONFLICT (id) DO NOTHING;
-      `);
-      console.log('✅ Migración matches -> "Matches" verificada.');
-    } catch (_) {}
-
-    try {
-      await sequelize.query(`
-        INSERT INTO matches (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
-        SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
-        FROM "Matches"
-        ON CONFLICT (id) DO NOTHING;
-      `);
-      console.log('✅ Migración "Matches" -> matches verificada.');
-    } catch (_) {}
+    // Migración legacy controlada: sólo si se solicita explícitamente mediante variable de entorno
+    if (process.env.RUN_LEGACY_MIGRATION === 'true') {
+      try {
+        await sequelize.query(`
+          INSERT INTO "Matches" (id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt")
+          SELECT id, "userId", "profileId", date, time, tournament, category, "homeTeam", "awayTeam", "homeGoals", "awayGoals", "yellowCards", "redCards", role, fee, "paymentStatus", notes, goals, cards, "createdAt", "updatedAt"
+          FROM matches
+          ON CONFLICT (id) DO NOTHING;
+        `);
+        console.log('✅ Migración legacy matches -> "Matches" verificada.');
+      } catch (_) {}
+    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Servidor COARC ejecutándose en el puerto ${PORT}`);

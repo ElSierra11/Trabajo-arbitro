@@ -19,7 +19,16 @@ import {
 } from './Icons';
 import { generateMatchPDF } from '../utils/pdfGenerator';
 import { exportMatchesToPDF, exportMatchesToExcel } from '../utils/exportUtils';
+import { 
+  isScheduled, 
+  isMissingTeams, 
+  needsCompletion, 
+  getTimeUntilMatch, 
+  extractFieldFromNotes,
+  getMatchDateTime 
+} from '../utils/matchStatus';
 import ReportUploadModal from './ReportUploadModal';
+import QuickAssignModal from './QuickAssignModal';
 
 // Format currency helper
 const formatCurrency = (val) => {
@@ -49,11 +58,12 @@ const getMonthLabel = (yearMonthStr) => {
 };
 
 const MatchList = ({ onEditMatch, onAddMatch }) => {
-  const { matches, deleteMatch, togglePaymentStatus, activeProfile } = useRefContext();
+  const { matches = [], deleteMatch, togglePaymentStatus, activeProfile } = useRefContext();
 
   // Search & Filter States
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
+  const [typeFilter, setTypeFilter] = useState('Todos'); // 'Todos' | 'Programados' | 'Jugados' | 'PorCompletar'
   const [roleFilter, setRoleFilter] = useState('Todos');
   const [monthFilter, setMonthFilter] = useState('Todos');
   const [tournamentFilter, setTournamentFilter] = useState('Todos');
@@ -62,6 +72,8 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
   const [expandedMatchId, setExpandedMatchId] = useState(null);
   // Report upload modal
   const [reportModalMatch, setReportModalMatch] = useState(null);
+  // Quick assign modal
+  const [quickAssignMatch, setQuickAssignMatch] = useState(null);
 
   // Extract all unique months from match dates for the dropdown filter
   const uniqueMonths = useMemo(() => {
@@ -90,24 +102,30 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
     return matches.filter(m => {
       // 1. Search Query
       const query = search.toLowerCase();
-      const matchText = `${m.homeTeam} ${m.awayTeam} ${m.tournament || ''} ${m.category || ''} ${m.notes || ''}`.toLowerCase();
+      const matchText = `${m.homeTeam || ''} ${m.awayTeam || ''} ${m.tournament || ''} ${m.category || ''} ${m.notes || ''}`.toLowerCase();
       const matchesSearch = !query || matchText.includes(query);
 
       // 2. Status Filter
       const matchesStatus = statusFilter === 'Todos' || m.paymentStatus === statusFilter;
 
-      // 3. Role Filter
+      // 3. Type Filter (Programados / Jugados / Por Completar)
+      const matchesType = typeFilter === 'Todos'
+        || (typeFilter === 'Programados' && isScheduled(m))
+        || (typeFilter === 'Jugados' && !isScheduled(m))
+        || (typeFilter === 'PorCompletar' && needsCompletion(m));
+
+      // 4. Role Filter
       const matchesRole = roleFilter === 'Todos' || m.role === roleFilter;
 
-      // 4. Month Filter
+      // 5. Month Filter
       const matchesMonth = monthFilter === 'Todos' || (m.date && m.date.startsWith(monthFilter));
 
-      // 5. Tournament Filter
+      // 6. Tournament Filter
       const matchesTournament = tournamentFilter === 'Todos' || (m.tournament && m.tournament.trim() === tournamentFilter);
 
-      return matchesSearch && matchesStatus && matchesRole && matchesMonth && matchesTournament;
+      return matchesSearch && matchesStatus && matchesType && matchesRole && matchesMonth && matchesTournament;
     });
-  }, [matches, search, statusFilter, roleFilter, monthFilter, tournamentFilter]);
+  }, [matches, search, statusFilter, typeFilter, roleFilter, monthFilter, tournamentFilter]);
 
   // Totals for filtered matches
   const filteredTotals = useMemo(() => {
@@ -175,6 +193,22 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
           gap: '0.75rem',
           alignItems: 'center' 
         }}>
+          {/* Type Filter (Programados vs Jugados) */}
+          <div>
+            <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Tipo de Encuentro</label>
+            <select 
+              className="form-control" 
+              style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            >
+              <option value="Todos">Todos los Partidos</option>
+              <option value="Programados">📅 Programados / Futuros</option>
+              <option value="Jugados">⚽ Jugados / Disputados</option>
+              <option value="PorCompletar">⚠️ Pendientes por Completar</option>
+            </select>
+          </div>
+
           {/* Status Filter */}
           <div>
             <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Estado de Pago</label>
@@ -341,8 +375,14 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                       <tr 
                         className="cursor-pointer hover:bg-surface-hover/80 transition-colors"
                         onClick={() => handleToggleExpand(match.id)}
+                        style={isScheduled(match) ? { backgroundColor: 'rgba(var(--color-primary-rgb), 0.02)' } : {}}
                       >
-                        <td style={{ whiteSpace: 'nowrap' }}>{formatDate(match.date)}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span>{formatDate(match.date)}</span>
+                            {match.time && <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{match.time}</span>}
+                          </div>
+                        </td>
                         <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {match.tournament || <em className="text-muted">Ninguno</em>}
                         </td>
@@ -351,14 +391,39 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                             {match.category ? `Sub-${match.category}` : 'Libre'}
                           </span>
                         </td>
-                        <td style={{ fontWeight: '600' }} className="flex items-center gap-1.5">
-                          <span>{match.homeTeam} vs {match.awayTeam}</span>
-                          <span className="text-[10px] text-accent/70 font-normal">
-                            {isExpanded ? '▲' : '▼'}
-                          </span>
+                        <td style={{ fontWeight: '600' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            {isMissingTeams(match) ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span style={{ color: 'var(--color-pending)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                                  Por asignar equipos
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setQuickAssignMatch(match); }}
+                                  className="btn btn-primary"
+                                  style={{ padding: '0.15rem 0.45rem', fontSize: '0.7rem', fontWeight: '800' }}
+                                  title="Asignar equipos rápidamente"
+                                >
+                                  ⚡ Asignar
+                                </button>
+                              </span>
+                            ) : (
+                              <span>{match.homeTeam} vs {match.awayTeam}</span>
+                            )}
+                            <span className="text-[10px] text-accent/70 font-normal">
+                              {isExpanded ? '▲' : '▼'}
+                            </span>
+                          </div>
                         </td>
-                        <td style={{ textAlign: 'center', fontWeight: '700', color: 'var(--color-primary)' }}>
-                          {match.homeGoals} - {match.awayGoals}
+                        <td style={{ textAlign: 'center', fontWeight: '700' }}>
+                          {isScheduled(match) ? (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', background: 'rgba(var(--color-primary-rgb), 0.12)', padding: '0.15rem 0.45rem', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                              ⏳ {getTimeUntilMatch(match)}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--color-primary)' }}>{match.homeGoals} - {match.awayGoals}</span>
+                          )}
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -516,6 +581,11 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
             {filteredMatches.map(match => {
               const isExpanded = expandedMatchId === match.id;
               const isPaid = match.paymentStatus === 'Pagado';
+              const scheduled = isScheduled(match);
+              const missing = isMissingTeams(match);
+              const needsComp = needsCompletion(match);
+              const { field } = extractFieldFromNotes(match.notes || '');
+              const countdown = getTimeUntilMatch(match);
 
               return (
                 <div
@@ -523,8 +593,12 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                   className="card"
                   style={{
                     padding: '1rem',
-                    backgroundColor: 'var(--color-surface)',
-                    border: isPaid ? '1px solid var(--color-border)' : '1px solid rgba(245, 158, 11, 0.35)',
+                    backgroundColor: scheduled 
+                      ? (missing ? 'rgba(245, 158, 11, 0.03)' : 'rgba(var(--color-primary-rgb), 0.02)') 
+                      : 'var(--color-surface)',
+                    border: scheduled
+                      ? (missing ? '1px dashed rgba(245, 158, 11, 0.55)' : '1px dashed rgba(var(--color-primary-rgb), 0.45)')
+                      : (isPaid ? '1px solid var(--color-border)' : '1px solid rgba(245, 158, 11, 0.35)'),
                     borderRadius: 'var(--radius-md)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -533,10 +607,27 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                 >
                   {/* Card Header: Date + Status Badge */}
                   <div className="flex-between" style={{ alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <CalendarIcon size={14} style={{ color: 'var(--color-primary)' }} />
-                      <span>{formatDate(match.date)} {match.time ? `• ${match.time}` : ''}</span>
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <CalendarIcon size={14} style={{ color: 'var(--color-primary)' }} />
+                        <span>{formatDate(match.date)} {match.time ? `• ${match.time}` : ''}</span>
+                      </span>
+
+                      {scheduled && (
+                        <span style={{
+                          background: 'rgba(var(--color-primary-rgb), 0.12)',
+                          color: 'var(--color-primary)',
+                          border: '1px solid rgba(var(--color-primary-rgb), 0.25)',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          fontWeight: '800',
+                          padding: '0.1rem 0.45rem',
+                        }}>
+                          ⏳ {countdown}
+                        </span>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => togglePaymentStatus(match.id)}
                       style={{
@@ -561,7 +652,7 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                     </button>
                   </div>
 
-                  {/* Tournament & Category Tag */}
+                  {/* Tournament, Category & Cancha Tag */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <span style={{
                       fontSize: '0.75rem',
@@ -582,43 +673,111 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
                     }}>
                       {match.category ? `Sub-${match.category}` : 'Libre'}
                     </span>
+                    {field && (
+                      <span style={{
+                        fontSize: '0.72rem',
+                        color: 'var(--color-accent)',
+                        background: 'rgba(0, 240, 255, 0.08)',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '4px'
+                      }}>
+                        📍 {field}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Matchup & Central Score Capsule */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.5rem 0.75rem',
-                    background: 'rgba(0,0,0,0.2)',
-                    borderRadius: 'var(--radius-sm)',
-                    gap: '0.5rem'
-                  }}>
-                    <span style={{ fontWeight: '700', fontSize: '0.95rem', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {match.homeTeam}
-                    </span>
-
-                    {/* Stylized Score Capsule */}
+                  {/* Matchup & Score OR Missing Teams Box */}
+                  {missing ? (
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.2rem 0.75rem',
-                      borderRadius: '12px',
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      color: 'var(--color-primary)',
-                      fontWeight: '800',
-                      fontSize: '1rem',
-                      letterSpacing: '0.05em'
+                      justifyContent: 'space-between',
+                      padding: '0.65rem 0.85rem',
+                      background: 'rgba(245, 158, 11, 0.08)',
+                      border: '1px dashed rgba(245, 158, 11, 0.35)',
+                      borderRadius: 'var(--radius-sm)',
+                      gap: '0.5rem'
                     }}>
-                      {match.homeGoals} - {match.awayGoals}
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--color-pending)' }}>
+                          Equipos por asignar
+                        </div>
+                        <div style={{ fontSize: '0.73rem', color: 'var(--color-text-muted)' }}>
+                          Línea de partido programada
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setQuickAssignMatch(match)}
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', fontWeight: '800' }}
+                      >
+                        ⚡ Asignar Equipos
+                      </button>
                     </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem 0.75rem',
+                      background: 'rgba(0,0,0,0.2)',
+                      borderRadius: 'var(--radius-sm)',
+                      gap: '0.5rem'
+                    }}>
+                      <span style={{ fontWeight: '700', fontSize: '0.95rem', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {match.homeTeam}
+                      </span>
 
-                    <span style={{ fontWeight: '700', fontSize: '0.95rem', flex: 1, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {match.awayTeam}
-                    </span>
-                  </div>
+                      {/* Stylized Score Capsule */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0.2rem 0.75rem',
+                        borderRadius: '12px',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        color: 'var(--color-primary)',
+                        fontWeight: '800',
+                        fontSize: '1rem',
+                        letterSpacing: '0.05em'
+                      }}>
+                        {scheduled ? 'VS' : `${match.homeGoals} - ${match.awayGoals}`}
+                      </div>
+
+                      <span style={{ fontWeight: '700', fontSize: '0.95rem', flex: 1, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {match.awayTeam}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Suggestion prompt if date passed and needs completion */}
+                  {needsComp && (
+                    <div style={{
+                      background: 'rgba(0, 240, 255, 0.08)',
+                      border: '1px solid rgba(0, 240, 255, 0.25)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.5rem 0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                      fontSize: '0.75rem',
+                    }}>
+                      <span style={{ color: 'var(--color-accent)' }}>
+                        ⏰ Partido finalizado: ¿Registrar marcador final y planilla?
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => onEditMatch(match)}
+                        style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', whiteSpace: 'nowrap' }}
+                      >
+                        Completar
+                      </button>
+                    </div>
+                  )}
 
                   {/* Details Toggle Button */}
                   <button
@@ -859,6 +1018,15 @@ const MatchList = ({ onEditMatch, onAddMatch }) => {
           onFilesChanged={() => {
             // The modal manages its own state; on close the user will see updated badges on next load
           }}
+        />
+      )}
+
+      {/* Quick Assign Teams Modal */}
+      {quickAssignMatch && (
+        <QuickAssignModal
+          match={quickAssignMatch}
+          isOpen={Boolean(quickAssignMatch)}
+          onClose={() => setQuickAssignMatch(null)}
         />
       )}
     </div>

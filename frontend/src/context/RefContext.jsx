@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 
 const RefContext = createContext();
 
@@ -312,7 +312,8 @@ export const RefProvider = ({ children }) => {
   }, [matches, activeProfileId, profiles]);
 
   // Statistics calculations helper
-  const getStats = () => {
+  // Memoized statistics calculations to prevent CPU spikes on re-renders
+  const stats = useMemo(() => {
     let totalEarnings = 0;
     let paidEarnings = 0;
     let pendingEarnings = 0;
@@ -320,14 +321,15 @@ export const RefProvider = ({ children }) => {
     let totalRedCards = 0;
 
     activeMatches.forEach(m => {
-      totalEarnings += m.fee;
+      const fee = Number(m.fee) || 0;
+      totalEarnings += fee;
       if (m.paymentStatus === 'Pagado') {
-        paidEarnings += m.fee;
+        paidEarnings += fee;
       } else {
-        pendingEarnings += m.fee;
+        pendingEarnings += fee;
       }
-      totalYellowCards += m.yellowCards;
-      totalRedCards += m.redCards;
+      totalYellowCards += Number(m.yellowCards) || 0;
+      totalRedCards += Number(m.redCards) || 0;
     });
 
     // Monthly breakdown
@@ -350,11 +352,12 @@ export const RefProvider = ({ children }) => {
         };
       }
       
-      monthlyStats[monthKey].total += m.fee;
+      const fee = Number(m.fee) || 0;
+      monthlyStats[monthKey].total += fee;
       if (m.paymentStatus === 'Pagado') {
-        monthlyStats[monthKey].paid += m.fee;
+        monthlyStats[monthKey].paid += fee;
       } else {
-        monthlyStats[monthKey].pending += m.fee;
+        monthlyStats[monthKey].pending += fee;
       }
       monthlyStats[monthKey].count += 1;
     });
@@ -372,7 +375,9 @@ export const RefProvider = ({ children }) => {
       totalRedCards,
       monthlyStats: monthlyStatsArray,
     };
-  };
+  }, [activeMatches]);
+
+  const getStats = useCallback(() => stats, [stats]);
 
   return (
     <RefContext.Provider
@@ -394,8 +399,8 @@ export const RefProvider = ({ children }) => {
         deleteMatch,
         togglePaymentStatus,
         exportData,
-        importData,
-        stats: getStats(),
+        stats,
+        getStats,
         reload: fetchData
       }}
     >

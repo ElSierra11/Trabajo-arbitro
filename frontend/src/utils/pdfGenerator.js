@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 const formatCurrency = (val) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
 
@@ -24,7 +21,8 @@ const COLORS = {
   orange: [240, 150, 50],        // Pending
 };
 
-export const generateMatchPDF = (match, profile) => {
+export const generateMatchPDF = async (match, profile) => {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const MARGIN = 18;
